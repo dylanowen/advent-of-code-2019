@@ -1,0 +1,13 @@
+[package]
+name = "advent-of-code-2019"
+version = "0.0.1"
+authors = ["Dylan Owen <dyltotheo@gmail.com>"]
+edition = "2018"
+
+readme = "Readme.md"
+homepage = "https://github.com/dylanowen/advent-of-code-2019"
+repository = "https://github.com/dylanowen/advent-of-code-2019"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
