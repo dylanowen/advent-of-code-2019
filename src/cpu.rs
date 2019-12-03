@@ -29,7 +29,11 @@ impl OpCode {
     }
 
     pub fn instruction_size(&self) -> usize {
-        4
+        match self {
+            OpCode::Add => 4,
+            OpCode::Mul => 4,
+            OpCode::Halt => 0,
+        }
     }
 }
 
@@ -105,8 +109,8 @@ impl IndexMut<usize> for Execution {
 }
 
 impl From<Execution> for Vec<IntCode> {
-    fn from(cpu: Execution) -> Self {
-        cpu.memory
+    fn from(execution: Execution) -> Self {
+        execution.memory
     }
 }
 

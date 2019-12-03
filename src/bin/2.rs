@@ -11,7 +11,7 @@ impl Problem for Two {
         parse_program(s)
     }
 
-    fn part_1(input: &Program, is_example: bool) -> Option<String> {
+    fn part_1(input: &Program, _name: &str, is_example: bool) -> Option<String> {
         let mut execution: Execution = input.clone().into();
 
         if !is_example {
@@ -24,13 +24,13 @@ impl Problem for Two {
         Some(format!("{}", execution[0]))
     }
 
-    fn part_2(input: &Program, is_example: bool) -> Option<String> {
+    fn part_2(input: &Program, _name: &str, is_example: bool) -> Option<String> {
         if is_example {
             // we don't have a good example for this problem
             return None;
         }
 
-        let goal = if is_example { 1202 } else { 19690720 };
+        let goal = if is_example { 1202 } else { 19_690_720 };
 
         let mut result = 0;
         'outer: for noun in 0..=99 {
@@ -58,6 +58,6 @@ impl Problem for Two {
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    run::<Two>(true, "1,9,10,3,2,3,11,0,99,30,40,50");
-    run::<Two>(false, include_str!("2_input.txt"));
+    run::<Two>(true, "", "1,9,10,3,2,3,11,0,99,30,40,50");
+    run::<Two>(false, "", include_str!("2_input.txt"));
 }

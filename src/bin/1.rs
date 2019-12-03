@@ -11,13 +11,13 @@ impl Problem for One {
             .collect()
     }
 
-    fn part_1(modules_mass: &Vec<isize>, _is_example: bool) -> Option<String> {
+    fn part_1(modules_mass: &Vec<isize>, _name: &str, _is_example: bool) -> Option<String> {
         let fuel_requirements: isize = modules_mass.iter().map(|mass| mass / 3 - 2).sum();
 
         Some(format!("{}", fuel_requirements))
     }
 
-    fn part_2(modules_mass: &Vec<isize>, _is_example: bool) -> Option<String> {
+    fn part_2(modules_mass: &Vec<isize>, _name: &str, _is_example: bool) -> Option<String> {
         let fuel_requirements: isize = modules_mass
             .iter()
             .map(|mass| {
@@ -41,6 +41,6 @@ impl Problem for One {
 }
 
 fn main() {
-    run::<One>(true, "100756");
-    run::<One>(false, include_str!("1_input.txt"));
+    run::<One>(true, "", "100756");
+    run::<One>(false, "", include_str!("1_input.txt"));
 }
