@@ -15,16 +15,13 @@ build: format clippy
 
 run: build
 	i=1 ; while [[ $$i -le 25 ]] ; do \
-	  if [ -f "./src/bin/$$i.rs" ]; then \
-	    cargo run $(RFLAGS) --bin $$i ; \
-    fi ; \
-    ((i = i + 1)) ; \
-  done
+		if [ -f "./src/bin/$$i.rs" ]; then \
+			cargo run $(RFLAGS) --bin $$i ; \
+		fi ; \
+		((i = i + 1)) ; \
+	done
 
-release: format clippy
-	cargo run --release
-
-default: build
+default: run
 
 clean:
 	cargo clean

@@ -177,7 +177,7 @@ impl Problem for Three {
     }
 
     fn problem_number() -> usize {
-        2
+        3
     }
 }
 
