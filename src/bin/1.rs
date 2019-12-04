@@ -41,6 +41,6 @@ impl Problem for One {
 }
 
 fn main() {
-    run::<One>(true, "", "100756");
-    run::<One>(false, "", include_str!("1_input.txt"));
+    run::<One>(true, "100756");
+    run::<One>(false, include_str!("1_input.txt"));
 }

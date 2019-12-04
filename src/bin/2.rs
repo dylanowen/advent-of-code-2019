@@ -58,6 +58,6 @@ impl Problem for Two {
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    run::<Two>(true, "", "1,9,10,3,2,3,11,0,99,30,40,50");
-    run::<Two>(false, "", include_str!("2_input.txt"));
+    run::<Two>(true, "1,9,10,3,2,3,11,0,99,30,40,50");
+    run::<Two>(false, include_str!("2_input.txt"));
 }
