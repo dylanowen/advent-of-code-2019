@@ -217,3 +217,15 @@ fn main() {
     );
     run::<Three>(false, include_str!("3_input.txt"));
 }
+
+#[cfg(test)]
+mod three {
+    use super::*;
+    use advent_of_code_2019::assert_solution;
+
+    #[test]
+    #[ignore] // this code is annoyingly slow
+    fn test() {
+        assert_solution::<Three>(include_str!("3_input.txt"), "4981", "164012");
+    }
+}

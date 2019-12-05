@@ -44,3 +44,14 @@ fn main() {
     run::<One>(true, "100756");
     run::<One>(false, include_str!("1_input.txt"));
 }
+
+#[cfg(test)]
+mod one {
+    use super::*;
+    use advent_of_code_2019::assert_solution;
+
+    #[test]
+    fn test() {
+        assert_solution::<One>(include_str!("1_input.txt"), "3361299", "5039071");
+    }
+}

@@ -46,6 +46,19 @@ macro_rules! run {
     }
 }
 
+pub fn assert_solution<P: Problem>(s: &str, expected_1: &str, expected_2: &str) {
+    let input = P::parse(s);
+
+    assert_eq!(
+        Some(expected_1.to_string()),
+        P::part_1(&input, "test", false)
+    );
+    assert_eq!(
+        Some(expected_2.to_string()),
+        P::part_2(&input, "test", false)
+    );
+}
+
 fn benchmark<C>(color: &str, name: &str, runner: C)
 where
     C: Fn() -> Option<String>,

@@ -99,11 +99,18 @@ fn main() {
 }
 
 #[cfg(test)]
-mod test {
+mod four {
     use super::*;
 
+    use advent_of_code_2019::assert_solution;
+
     #[test]
-    fn one() {
+    fn test() {
+        assert_solution::<Four>("278384-824795", "921", "603");
+    }
+
+    #[test]
+    fn part_1() {
         let mut num = split(111111);
         assert_eq!(true, has_adjacent_digits(&num) && is_increasing(&num));
 
@@ -115,7 +122,7 @@ mod test {
     }
 
     #[test]
-    fn two() {
+    fn part_2() {
         let mut num = split(112233);
         assert_eq!(true, has_double_grouping(&num) && is_increasing(&num));
 

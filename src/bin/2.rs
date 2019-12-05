@@ -7,7 +7,7 @@ struct Two {}
 impl Problem for Two {
     type Input = Program;
 
-    fn parse(s: &str) -> Program {
+    fn parse(s: &str) -> Self::Input {
         parse_program(s)
     }
 
@@ -24,7 +24,7 @@ impl Problem for Two {
         Some(format!("{}", execution[0]))
     }
 
-    fn part_2(input: &Program, _name: &str, is_example: bool) -> Option<String> {
+    fn part_2(input: &Self::Input, _name: &str, is_example: bool) -> Option<String> {
         if is_example {
             // we don't have a good example for this problem
             return None;
@@ -60,4 +60,15 @@ fn main() {
 
     run::<Two>(true, "1,9,10,3,2,3,11,0,99,30,40,50");
     run::<Two>(false, include_str!("2_input.txt"));
+}
+
+#[cfg(test)]
+mod two {
+    use super::*;
+    use advent_of_code_2019::assert_solution;
+
+    #[test]
+    fn test() {
+        assert_solution::<Two>(include_str!("2_input.txt"), "6327510", "4112");
+    }
 }
