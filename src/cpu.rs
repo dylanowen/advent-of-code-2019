@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 use std::result;
 
 pub type IntCode = isize;
-pub type Program = Vec<IntCode>;
+pub type Memory = Vec<IntCode>;
 
 #[derive(Debug, Clone)]
 pub enum CPUError {
@@ -14,34 +14,30 @@ type Result<T> = result::Result<T, CPUError>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OpCode {
-    Add(Mode, Mode, Mode),
-    Mul(Mode, Mode, Mode),
-    Input(Mode),
-    Output(Mode),
-    JumpIfTrue(Mode, Mode),
-    JumpIfFalse(Mode, Mode),
-    LessThan(Mode, Mode, Mode),
-    Equals(Mode, Mode, Mode),
+    Add,
+    Mul,
+    Input,
+    Output,
+    JumpIfTrue,
+    JumpIfFalse,
+    LessThan,
+    Equals,
     Halt,
 }
 
 impl OpCode {
-    pub fn new(int_code: IntCode) -> Result<OpCode> {
-        let op_code = int_code % 100;
-
-        let mode_one = Mode::new((int_code / 100) % 10)?;
-        let mode_two = Mode::new((int_code / 1000) % 10)?;
-        let mode_three = Mode::new((int_code / 10000) % 10)?;
+    pub fn new(instruction: IntCode) -> Result<OpCode> {
+        let op_code = instruction % 100;
 
         match op_code {
-            1 => Ok(OpCode::Add(mode_one, mode_two, mode_three)),
-            2 => Ok(OpCode::Mul(mode_one, mode_two, mode_three)),
-            3 => Ok(OpCode::Input(mode_one)),
-            4 => Ok(OpCode::Output(mode_one)),
-            5 => Ok(OpCode::JumpIfTrue(mode_one, mode_two)),
-            6 => Ok(OpCode::JumpIfFalse(mode_one, mode_two)),
-            7 => Ok(OpCode::LessThan(mode_one, mode_two, mode_three)),
-            8 => Ok(OpCode::Equals(mode_one, mode_two, mode_three)),
+            1 => Ok(OpCode::Add),
+            2 => Ok(OpCode::Mul),
+            3 => Ok(OpCode::Input),
+            4 => Ok(OpCode::Output),
+            5 => Ok(OpCode::JumpIfTrue),
+            6 => Ok(OpCode::JumpIfFalse),
+            7 => Ok(OpCode::LessThan),
+            8 => Ok(OpCode::Equals),
             99 => Ok(OpCode::Halt),
             _ => Err(CPUError::InvalidOpCode),
         }
@@ -49,16 +45,34 @@ impl OpCode {
 
     pub fn instruction_size(&self) -> usize {
         match self {
-            OpCode::Add(_, _, _) => 4,
-            OpCode::Mul(_, _, _) => 4,
-            OpCode::Input(_) => 2,
-            OpCode::Output(_) => 2,
-            OpCode::JumpIfTrue(_, _) => 3,
-            OpCode::JumpIfFalse(_, _) => 3,
-            OpCode::LessThan(_, _, _) => 4,
-            OpCode::Equals(_, _, _) => 4,
+            OpCode::Add | OpCode::Mul | OpCode::LessThan | OpCode::Equals => 4,
+            OpCode::Input | OpCode::Output => 2,
+            OpCode::JumpIfTrue | OpCode::JumpIfFalse => 3,
             OpCode::Halt => 0,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Instruction {
+    op_code: OpCode,
+    modes: [Mode; 3],
+}
+
+impl Instruction {
+    pub fn new(instruction: IntCode) -> Result<Instruction> {
+        let mode_one = Mode::new((instruction / 100) % 10)?;
+        let mode_two = Mode::new((instruction / 1000) % 10)?;
+        let mode_three = Mode::new((instruction / 10000) % 10)?;
+
+        Ok(Instruction {
+            op_code: OpCode::new(instruction)?,
+            modes: [mode_one, mode_two, mode_three],
+        })
+    }
+
+    pub fn size(&self) -> usize {
+        self.op_code.instruction_size()
     }
 }
 
@@ -88,17 +102,17 @@ pub enum ExecutionState {
 #[derive(Debug, Clone)]
 pub struct Execution {
     pub ip: usize,
-    pub memory: Vec<IntCode>,
+    pub memory: Memory,
     input: VecDeque<IntCode>,
     pub output: VecDeque<IntCode>,
 }
 
 impl Execution {
-    pub fn new(memory: Vec<IntCode>) -> Execution {
+    pub fn new(memory: Memory) -> Execution {
         Self::new_input(memory, vec![])
     }
 
-    pub fn new_input(memory: Vec<IntCode>, input: Vec<IntCode>) -> Execution {
+    pub fn new_input(memory: Memory, input: Memory) -> Execution {
         Execution {
             ip: 0,
             memory,
@@ -120,57 +134,62 @@ impl Execution {
     }
 
     pub fn step(&mut self) -> Result<ExecutionState> {
-        let op = OpCode::new(self.memory[self.ip])?;
-        let mut ip_offset = op.instruction_size();
+        let instruction = Instruction::new(self.memory[self.ip])?;
+        let mut ip_offset = instruction.size();
 
-        let state = match op {
-            OpCode::Add(m1, m2, m3) => {
-                *self.w_off(3, m3) = self.r_off(1, m1) + self.r_off(2, m2);
+        let Instruction {
+            op_code,
+            modes: parameters,
+        } = instruction;
+
+        let state = match op_code {
+            OpCode::Add => {
+                *parameters.w3(self) = parameters.r1(self) + parameters.r2(self);
                 ExecutionState::Running
             }
-            OpCode::Mul(m1, m2, m3) => {
-                *self.w_off(3, m3) = self.r_off(1, m1) * self.r_off(2, m2);
+            OpCode::Mul => {
+                *parameters.w3(self) = parameters.r1(self) * parameters.r2(self);
                 ExecutionState::Running
             }
-            OpCode::Input(m1) => {
+            OpCode::Input => {
                 let input = self.input.pop_front();
 
                 match input {
                     Some(i) => {
-                        *self.w_off(1, m1) = i;
+                        *parameters.w1(self) = i;
                         ExecutionState::Running
                     }
                     None => ExecutionState::NeedsInput,
                 }
             }
-            OpCode::Output(m1) => {
-                self.output.push_back(self.r_off(1, m1));
+            OpCode::Output => {
+                self.output.push_back(parameters.r1(self));
                 ExecutionState::Running
             }
-            OpCode::JumpIfTrue(m1, m2) => {
-                if self.r_off(1, m1) != 0 {
-                    self.ip = self.r_off(2, m2) as usize;
+            OpCode::JumpIfTrue => {
+                if parameters.r1(self) != 0 {
+                    self.ip = parameters.r2(self) as usize;
                     ip_offset = 0;
                 }
                 ExecutionState::Running
             }
-            OpCode::JumpIfFalse(m1, m2) => {
-                if self.r_off(1, m1) == 0 {
-                    self.ip = self.r_off(2, m2) as usize;
+            OpCode::JumpIfFalse => {
+                if parameters.r1(self) == 0 {
+                    self.ip = parameters.r2(self) as usize;
                     ip_offset = 0;
                 }
                 ExecutionState::Running
             }
-            OpCode::LessThan(m1, m2, m3) => {
-                *self.w_off(3, m3) = if self.r_off(1, m1) < self.r_off(2, m2) {
+            OpCode::LessThan => {
+                *parameters.w3(self) = if parameters.r1(self) < parameters.r2(self) {
                     1
                 } else {
                     0
                 };
                 ExecutionState::Running
             }
-            OpCode::Equals(m1, m2, m3) => {
-                *self.w_off(3, m3) = if self.r_off(1, m1) == self.r_off(2, m2) {
+            OpCode::Equals => {
+                *parameters.w3(self) = if parameters.r1(self) == parameters.r2(self) {
                     1
                 } else {
                     0
@@ -185,21 +204,6 @@ impl Execution {
         }
 
         Ok(state)
-    }
-
-    fn r_off(&self, offset: IntCode, mode: Mode) -> IntCode {
-        let value = self[(self.ip as isize + offset) as usize];
-        match mode {
-            Mode::Position => self[value as usize],
-            Mode::Immediate => value,
-        }
-    }
-
-    fn w_off(&mut self, offset: IntCode, mode: Mode) -> &mut IntCode {
-        assert_ne!(mode, Mode::Immediate);
-
-        let index = self[(self.ip as isize + offset) as usize];
-        &mut self[index as usize]
     }
 }
 
@@ -217,19 +221,66 @@ impl IndexMut<usize> for Execution {
     }
 }
 
-impl From<Execution> for Vec<IntCode> {
+impl From<Execution> for Memory {
     fn from(execution: Execution) -> Self {
         execution.memory
     }
 }
 
-impl From<Vec<IntCode>> for Execution {
-    fn from(memory: Vec<IntCode>) -> Self {
+impl From<Memory> for Execution {
+    fn from(memory: Memory) -> Self {
         Execution::new(memory)
     }
 }
 
-pub fn parse_program(raw_memory: &str) -> Program {
+trait ParameterExtractor {
+    fn r1(&self, execution: &Execution) -> IntCode {
+        self.read(0, execution)
+    }
+
+    fn r2(&self, execution: &Execution) -> IntCode {
+        self.read(1, execution)
+    }
+
+    fn r3(&self, execution: &Execution) -> IntCode {
+        self.read(2, execution)
+    }
+
+    fn w1<'a>(&self, execution: &'a mut Execution) -> &'a mut IntCode {
+        self.write(0, execution)
+    }
+
+    fn w2<'a>(&self, execution: &'a mut Execution) -> &'a mut IntCode {
+        self.write(1, execution)
+    }
+
+    fn w3<'a>(&self, execution: &'a mut Execution) -> &'a mut IntCode {
+        self.write(2, execution)
+    }
+
+    fn read(&self, offset: isize, execution: &Execution) -> IntCode;
+
+    fn write<'a>(&self, offset: isize, execution: &'a mut Execution) -> &'a mut IntCode;
+}
+
+impl ParameterExtractor for [Mode; 3] {
+    fn read(&self, offset: isize, execution: &Execution) -> isize {
+        let value = execution[(execution.ip as isize + offset + 1) as usize];
+        match self[offset as usize] {
+            Mode::Position => execution[value as usize],
+            Mode::Immediate => value,
+        }
+    }
+
+    fn write<'a>(&self, offset: isize, execution: &'a mut Execution) -> &'a mut isize {
+        assert_ne!(self[offset as usize], Mode::Immediate);
+
+        let index = execution[(execution.ip as isize + offset + 1) as usize];
+        &mut execution[index as usize]
+    }
+}
+
+pub fn parse_program(raw_memory: &str) -> Memory {
     raw_memory
         .split(',')
         .map(|s| s.parse::<IntCode>().expect("parse error"))
@@ -241,25 +292,31 @@ mod test {
     use super::*;
 
     #[test]
-    fn parse_op_code() {
+    fn parse_instruction() {
         assert_eq!(
-            OpCode::Mul(Mode::Position, Mode::Immediate, Mode::Position),
-            OpCode::new(1002).unwrap()
+            Instruction {
+                op_code: OpCode::Mul,
+                modes: [Mode::Position, Mode::Immediate, Mode::Position]
+            },
+            Instruction::new(1002).unwrap()
         );
 
         assert_eq!(
-            OpCode::Mul(Mode::Position, Mode::Immediate, Mode::Immediate),
-            OpCode::new(11002).unwrap()
+            Instruction {
+                op_code: OpCode::Mul,
+                modes: [Mode::Position, Mode::Immediate, Mode::Immediate]
+            },
+            Instruction::new(11002).unwrap()
         );
     }
 
     #[test]
     fn cpu_position_mode() {
-        assert_eq!(vec![0], run("3,9,8,9,10,9,4,9,99,-1,8", vec![7]));
-        assert_eq!(vec![1], run("3,9,8,9,10,9,4,9,99,-1,8", vec![8]));
+        assert_eq!(run("3,9,8,9,10,9,4,9,99,-1,8", vec![7]), vec![0]);
+        assert_eq!(run("3,9,8,9,10,9,4,9,99,-1,8", vec![8]), vec![1]);
     }
 
-    fn run(program: &str, input: Vec<IntCode>) -> Vec<IntCode> {
+    fn run(program: &str, input: Memory) -> Vec<IntCode> {
         let mut execution: Execution = Execution::new_input(parse_program(program), input);
 
         execution.run().expect("This should always work");

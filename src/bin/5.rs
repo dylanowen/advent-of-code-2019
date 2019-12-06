@@ -1,11 +1,11 @@
-use advent_of_code_2019::cpu::{parse_program, Execution, Program};
+use advent_of_code_2019::cpu::{parse_program, Execution, Memory};
 use advent_of_code_2019::{run, Problem};
 use env_logger::Env;
 
 struct Five {}
 
 impl Problem for Five {
-    type Input = Program;
+    type Input = Memory;
 
     fn parse(s: &str) -> Self::Input {
         parse_program(s)
@@ -24,7 +24,7 @@ impl Problem for Five {
     }
 }
 
-fn execute_program(program: &Program, input: isize) -> Option<String> {
+fn execute_program(program: &Memory, input: isize) -> Option<String> {
     let mut execution: Execution = Execution::new_input(program.clone(), vec![input]);
 
     execution.run().expect("This should always work");

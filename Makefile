@@ -13,6 +13,9 @@ clippy:
 build: format clippy
 	cargo build $(RFLAGS)
 
+test: build
+	cargo test $(RFLAGS)
+
 run: build
 	i=1 ; while [[ $$i -le 25 ]] ; do \
 		if [ -f "./src/bin/$$i.rs" ]; then \

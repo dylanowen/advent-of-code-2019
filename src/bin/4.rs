@@ -41,9 +41,9 @@ impl Problem for Four {
 
 fn split(num: usize) -> [usize; 6] {
     [
-        (num / 100000) % 10,
-        (num / 10000) % 10,
-        (num / 1000) % 10,
+        (num / 100_000) % 10,
+        (num / 10_000) % 10,
+        (num / 1_000) % 10,
         (num / 100) % 10,
         (num / 10) % 10,
         num % 10,

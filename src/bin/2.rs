@@ -1,17 +1,17 @@
-use advent_of_code_2019::cpu::{parse_program, Execution, Program};
+use advent_of_code_2019::cpu::{parse_program, Execution, Memory};
 use advent_of_code_2019::{run, Problem};
 use env_logger::Env;
 
 struct Two {}
 
 impl Problem for Two {
-    type Input = Program;
+    type Input = Memory;
 
     fn parse(s: &str) -> Self::Input {
         parse_program(s)
     }
 
-    fn part_1(input: &Program, _name: &str, is_example: bool) -> Option<String> {
+    fn part_1(input: &Memory, _name: &str, is_example: bool) -> Option<String> {
         let mut execution: Execution = input.clone().into();
 
         if !is_example {
