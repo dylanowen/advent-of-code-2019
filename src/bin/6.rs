@@ -34,7 +34,7 @@ impl Problem for Six {
             let mut chain = VecDeque::new();
             let mut maybe_current = Some(start);
             while let Some(current) = maybe_current {
-                maybe_current = orbits.get(&current).map(|s| s.clone());
+                maybe_current = orbits.get(&current).cloned();
                 chain.push_front(current);
             }
 

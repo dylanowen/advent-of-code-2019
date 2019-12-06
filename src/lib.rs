@@ -14,7 +14,7 @@ pub trait Problem {
 }
 
 pub fn run<P: Problem>(is_example: bool, raw_input: &str) {
-    run_with_name::<P>(is_example, "", raw_input)
+    run_with_name::<P>(is_example, " ", raw_input)
 }
 
 pub fn run_with_name<P: Problem>(is_example: bool, name: &str, raw_input: &str) {
@@ -69,11 +69,11 @@ where
 
     if let Some(result) = maybe_result {
         println!(
-            "{}{}:\u{001B}[0m {:01}.{:03}s",
+            "{}{}:\u{001B}[0m {:2}.{:09}s",
             color,
             name,
             elapsed.as_secs(),
-            elapsed.subsec_millis()
+            elapsed.subsec_nanos()
         );
 
         println!("{}", result);
