@@ -224,6 +224,7 @@ impl Index<usize> for Execution {
 
     fn index(&self, address: usize) -> &Self::Output {
         if address >= self.memory.len() {
+            // memory is initialized to zero
             &0
         } else {
             &self.memory[address]
@@ -303,7 +304,7 @@ impl ParameterExtractor for [Mode; 3] {
         let value = execution[(execution.ip as IntCode + offset + 1) as usize];
         match self[offset as usize] {
             Mode::Position => &mut execution[value as usize],
-            Mode::Immediate => panic!("We should never write in imediate mode"),
+            Mode::Immediate => panic!("We should never write in immediate mode"),
             Mode::Relative => {
                 let address = (execution.relative_base as IntCode) + value;
                 &mut execution[address as usize]
@@ -328,7 +329,7 @@ mod test {
         assert_eq!(
             Instruction {
                 op_code: OpCode::Mul,
-                modes: [Mode::Position, Mode::Immediate, Mode::Position]
+                modes: [Mode::Position, Mode::Immediate, Mode::Position],
             },
             Instruction::new(1002).unwrap()
         );
@@ -336,7 +337,7 @@ mod test {
         assert_eq!(
             Instruction {
                 op_code: OpCode::Mul,
-                modes: [Mode::Position, Mode::Immediate, Mode::Immediate]
+                modes: [Mode::Position, Mode::Immediate, Mode::Immediate],
             },
             Instruction::new(11002).unwrap()
         );
@@ -346,6 +347,25 @@ mod test {
     fn cpu_position_mode() {
         assert_eq!(run("3,9,8,9,10,9,4,9,99,-1,8", vec![7]), vec![0]);
         assert_eq!(run("3,9,8,9,10,9,4,9,99,-1,8", vec![8]), vec![1]);
+    }
+
+    #[test]
+    fn cpu_relative_mode() {
+        assert_eq!(
+            run(
+                "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99",
+                vec![],
+            ),
+            vec![109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]
+        );
+        assert_eq!(
+            run("1102,34915192,34915192,7,4,7,99,0", vec![]),
+            vec![1219070632396864]
+        );
+        assert_eq!(
+            run("104,1125899906842624,99", vec![]),
+            vec![1125899906842624]
+        );
     }
 
     fn run(program: &str, input: Memory) -> Vec<IntCode> {
