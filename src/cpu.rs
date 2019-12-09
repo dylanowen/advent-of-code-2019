@@ -103,7 +103,7 @@ pub enum ExecutionState {
 pub struct Execution {
     pub ip: usize,
     pub memory: Memory,
-    input: VecDeque<IntCode>,
+    pub input: VecDeque<IntCode>,
     pub output: VecDeque<IntCode>,
 }
 

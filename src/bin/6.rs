@@ -69,7 +69,7 @@ fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
     run::<Six>(
-        false,
+        true,
         "COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nK)YOU\nI)SAN",
     );
     run::<Six>(false, include_str!("6_input.txt"));
