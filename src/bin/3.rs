@@ -1,5 +1,5 @@
 use advent_of_code_2019::coordinates::{Grid, Point, ZERO_POINT};
-use advent_of_code_2019::{run, Problem};
+use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 use std::ops::RangeInclusive;
 
@@ -59,8 +59,9 @@ impl Move {
 
 impl Problem for Three {
     type Input = Vec<Vec<Move>>;
+    type Extra = ();
 
-    fn parse(s: &str) -> Vec<Vec<Move>> {
+    fn parse(s: &str, _state: &ProblemState<Self::Extra>) -> Self::Input {
         s.split('\n')
             .map(|w| {
                 w.split(',')
@@ -70,7 +71,7 @@ impl Problem for Three {
             .collect::<Vec<Vec<Move>>>()
     }
 
-    fn part_1(wires: &Vec<Vec<Move>>, name: &str, _is_example: bool) -> Option<String> {
+    fn part_1(wires: &Vec<Vec<Move>>, state: &ProblemState<Self::Extra>) -> Option<String> {
         let (width, height) = calculate_max_dimensions(wires);
         let mut grid = Grid::new_with_dimensions(width, height);
         grid.set(0, 0, Wire::Center);
@@ -114,7 +115,7 @@ impl Problem for Three {
         }
 
         if log::log_enabled!(log::Level::Debug) {
-            grid.write_image(&*format!("./{}.png", name), |w| match w {
+            grid.write_image(&*format!("./{}.png", state.name), |w| match w {
                 Wire::Center => [255, 255, 255, 255],
                 Wire::One => [255, 0, 0, 255],
                 Wire::Two => [0, 0, 255, 255],
@@ -126,7 +127,7 @@ impl Problem for Three {
         Some(format!("{:?}", min_distance))
     }
 
-    fn part_2(wires: &Vec<Vec<Move>>, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_2(wires: &Vec<Vec<Move>>, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let (width, height) = calculate_max_dimensions(wires);
         let mut grid = Grid::new_with_dimensions(width, height);
         grid.set(0, 0, (Wire::Center, 0));
@@ -210,12 +211,12 @@ fn calculate_max_dimensions(wires: &[Vec<Move>]) -> (RangeInclusive<isize>, Rang
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    run!(Three; true,
-        "R8,U5,L5,D3\nU7,R6,D4,L4",
-        "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83",
-        "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7"
+    example!(Three;
+        RunFor::Part1, (), "R8,U5,L5,D3\nU7,R6,D4,L4",
+        RunFor::Both,(), "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83",
+        RunFor::Both,(), "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7"
     );
-    run::<Three>(false, include_str!("3_input.txt"));
+    run::<Three>((), include_str!("3_input.txt"));
 }
 
 #[cfg(test)]
@@ -226,6 +227,6 @@ mod three {
     #[test]
     #[ignore] // this code is annoyingly slow
     fn test() {
-        assert_solution::<Three>(include_str!("3_input.txt"), "4981", "164012");
+        assert_solution::<Three>(include_str!("3_input.txt"), (), "4981", "164012");
     }
 }

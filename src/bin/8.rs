@@ -1,10 +1,7 @@
-use advent_of_code_2019::{run, Problem};
+use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 
 struct Eight {}
-
-static WIDTH: usize = 25;
-static HEIGHT: usize = 6;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum Pixel {
@@ -15,8 +12,10 @@ enum Pixel {
 
 impl Problem for Eight {
     type Input = Vec<Vec<Pixel>>;
+    type Extra = (usize, usize);
 
-    fn parse(s: &str) -> Self::Input {
+    fn parse(s: &str, state: &ProblemState<Self::Extra>) -> Self::Input {
+        let (width, height) = state.extra;
         let raw_image: Vec<Pixel> = s
             .chars()
             .map(|c| match c.to_digit(10).unwrap() {
@@ -28,12 +27,12 @@ impl Problem for Eight {
             .collect();
 
         raw_image
-            .chunks(WIDTH * HEIGHT)
+            .chunks(width * height)
             .map(|c| c.to_vec())
             .collect()
     }
 
-    fn part_1(image_data: &Self::Input, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_1(image_data: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let mut fewest_zeros = std::usize::MAX;
         let mut multiplied = 0;
         for layer in image_data.iter() {
@@ -51,8 +50,8 @@ impl Problem for Eight {
         Some(format!("{}", multiplied))
     }
 
-    fn part_2(image_data: &Self::Input, _name: &str, is_example: bool) -> Option<String> {
-        let (width, height) = if is_example { (2, 2) } else { (WIDTH, HEIGHT) };
+    fn part_2(image_data: &Self::Input, state: &ProblemState<Self::Extra>) -> Option<String> {
+        let (width, height) = state.extra;
 
         let mut image_data = image_data.clone();
         let mut image = image_data.pop().unwrap();
@@ -83,7 +82,7 @@ impl Problem for Eight {
     }
 }
 
-fn render_image(image: &Vec<Pixel>, width: usize, height: usize) -> String {
+fn render_image(image: &[Pixel], width: usize, height: usize) -> String {
     // WIDTH + 1 for \newlines
     let mut rendered_image = String::with_capacity((width + 1) * height);
     for y in 0..height {
@@ -104,8 +103,8 @@ fn render_image(image: &Vec<Pixel>, width: usize, height: usize) -> String {
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    //run!(Eight; true, "0222112222120000");
-    run::<Eight>(false, include_str!("8_input.txt"));
+    example!(Eight; RunFor::Part2, (2, 2), "0222112222120000");
+    run::<Eight>((25, 6), include_str!("8_input.txt"));
 }
 
 #[cfg(test)]
@@ -117,6 +116,7 @@ mod eight {
     fn test() {
         assert_solution::<Eight>(
             include_str!("8_input.txt"),
+            (25, 6),
             "2064",
             r#"*  *  **  *  * ****  **  
 * *  *  * *  *    * *  * 

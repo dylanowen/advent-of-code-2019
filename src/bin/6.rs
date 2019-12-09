@@ -1,4 +1,4 @@
-use advent_of_code_2019::{run, Problem};
+use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 use std::collections::{HashMap, VecDeque};
 
@@ -6,8 +6,9 @@ struct Six {}
 
 impl Problem for Six {
     type Input = HashMap<String, String>;
+    type Extra = ();
 
-    fn parse(s: &str) -> Self::Input {
+    fn parse(s: &str, _state: &ProblemState<Self::Extra>) -> Self::Input {
         s.split('\n')
             .map(|row| {
                 let orbit = row.split(')').collect::<Vec<&str>>();
@@ -16,7 +17,7 @@ impl Problem for Six {
             .collect()
     }
 
-    fn part_1(orbits: &Self::Input, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_1(orbits: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let mut count = 0;
         for (_orbiter, orbitee) in orbits.iter() {
             let mut maybe_current = Some(orbitee);
@@ -29,7 +30,7 @@ impl Problem for Six {
         Some(format!("{}", count))
     }
 
-    fn part_2(orbits: &Self::Input, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_2(orbits: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let build_chain = |start: String| {
             let mut chain = VecDeque::new();
             let mut maybe_current = Some(start);
@@ -68,11 +69,11 @@ impl Problem for Six {
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    run::<Six>(
-        true,
-        "COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nK)YOU\nI)SAN",
+    example!(Six;
+        RunFor::Part1, (), "COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L",
+        RunFor::Part2, (), "COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nK)YOU\nI)SAN"
     );
-    run::<Six>(false, include_str!("6_input.txt"));
+    run::<Six>((), include_str!("6_input.txt"));
 }
 
 #[cfg(test)]
@@ -82,6 +83,6 @@ mod six {
 
     #[test]
     fn test() {
-        assert_solution::<Six>(include_str!("6_input.txt"), "294191", "424");
+        assert_solution::<Six>(include_str!("6_input.txt"), (), "294191", "424");
     }
 }

@@ -1,20 +1,21 @@
 use advent_of_code_2019::cpu::{parse_program, Execution, Memory};
-use advent_of_code_2019::{run, Problem};
+use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 
 struct Two {}
 
 impl Problem for Two {
     type Input = Memory;
+    type Extra = ();
 
-    fn parse(s: &str) -> Self::Input {
+    fn parse(s: &str, _state: &ProblemState<Self::Extra>) -> Self::Input {
         parse_program(s)
     }
 
-    fn part_1(input: &Memory, _name: &str, is_example: bool) -> Option<String> {
+    fn part_1(input: &Memory, state: &ProblemState<Self::Extra>) -> Option<String> {
         let mut execution: Execution = input.clone().into();
 
-        if !is_example {
+        if !state.is_example {
             execution[1] = 12;
             execution[2] = 2;
         }
@@ -24,13 +25,8 @@ impl Problem for Two {
         Some(format!("{}", execution[0]))
     }
 
-    fn part_2(input: &Self::Input, _name: &str, is_example: bool) -> Option<String> {
-        if is_example {
-            // we don't have a good example for this problem
-            return None;
-        }
-
-        let goal = if is_example { 1202 } else { 19_690_720 };
+    fn part_2(input: &Self::Input, state: &ProblemState<Self::Extra>) -> Option<String> {
+        let goal = if state.is_example { 1202 } else { 19_690_720 };
 
         let mut result = 0;
         'outer: for noun in 0..=99 {
@@ -58,8 +54,8 @@ impl Problem for Two {
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    run::<Two>(true, "1,9,10,3,2,3,11,0,99,30,40,50");
-    run::<Two>(false, include_str!("2_input.txt"));
+    example!(Two; RunFor::Part1, (), "1,9,10,3,2,3,11,0,99,30,40,50");
+    run::<Two>((), include_str!("2_input.txt"));
 }
 
 #[cfg(test)]
@@ -69,6 +65,6 @@ mod two {
 
     #[test]
     fn test() {
-        assert_solution::<Two>(include_str!("2_input.txt"), "6327510", "4112");
+        assert_solution::<Two>(include_str!("2_input.txt"), (), "6327510", "4112");
     }
 }

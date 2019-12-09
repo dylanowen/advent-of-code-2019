@@ -1,23 +1,25 @@
-use advent_of_code_2019::{run, Problem};
+use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
+use env_logger::Env;
 
 struct One {}
 
 impl Problem for One {
     type Input = Vec<isize>;
+    type Extra = ();
 
-    fn parse(s: &str) -> Vec<isize> {
+    fn parse(s: &str, _state: &ProblemState<Self::Extra>) -> Self::Input {
         s.split('\n')
             .map(|mass| mass.parse::<isize>().expect("parse error"))
             .collect()
     }
 
-    fn part_1(modules_mass: &Vec<isize>, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_1(modules_mass: &Vec<isize>, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let fuel_requirements: isize = modules_mass.iter().map(|mass| mass / 3 - 2).sum();
 
         Some(format!("{}", fuel_requirements))
     }
 
-    fn part_2(modules_mass: &Vec<isize>, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_2(modules_mass: &Vec<isize>, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let fuel_requirements: isize = modules_mass
             .iter()
             .map(|mass| {
@@ -41,8 +43,10 @@ impl Problem for One {
 }
 
 fn main() {
-    run::<One>(true, "100756");
-    run::<One>(false, include_str!("1_input.txt"));
+    env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
+
+    example!(One; RunFor::Both, (), "100756");
+    run::<One>((), include_str!("1_input.txt"));
 }
 
 #[cfg(test)]
@@ -52,6 +56,6 @@ mod one {
 
     #[test]
     fn test() {
-        assert_solution::<One>(include_str!("1_input.txt"), "3361299", "5039071");
+        assert_solution::<One>(include_str!("1_input.txt"), (), "3361299", "5039071");
     }
 }

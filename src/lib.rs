@@ -3,60 +3,90 @@ use std::time::Instant;
 pub mod coordinates;
 pub mod cpu;
 
+pub struct ProblemState<T: Sized + Default> {
+    pub name: String,
+    pub is_example: bool,
+    pub extra: T,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum RunFor {
+    Part1,
+    Part2,
+    Both,
+}
+
 pub trait Problem {
     type Input;
+    type Extra: Sized + Default;
 
-    fn parse(s: &str) -> Self::Input;
-    fn part_1(input: &Self::Input, name: &str, is_example: bool) -> Option<String>;
-    fn part_2(input: &Self::Input, name: &str, is_example: bool) -> Option<String>;
+    fn parse(s: &str, state: &ProblemState<Self::Extra>) -> Self::Input;
+    fn part_1(input: &Self::Input, state: &ProblemState<Self::Extra>) -> Option<String>;
+    fn part_2(input: &Self::Input, state: &ProblemState<Self::Extra>) -> Option<String>;
 
     fn problem_number() -> usize;
 }
 
-pub fn run<P: Problem>(is_example: bool, raw_input: &str) {
-    run_with_name::<P>(is_example, " ", raw_input)
+pub fn run<P: Problem>(extra: P::Extra, input: &str) {
+    run_with_name::<P>(" ", false, RunFor::Both, extra, input)
 }
 
-pub fn run_with_name<P: Problem>(is_example: bool, name: &str, raw_input: &str) {
-    let input = P::parse(raw_input);
+/// Can be used to run examples for the problem
+#[macro_export]
+macro_rules! example {
+    ( $problem:ty; $( $run_for:expr, $extra:expr, $input:expr ),+ ) => {
+        let mut count = 1;
+        $(
+            $crate::run_with_name::<$problem>(&*count.to_string(), true, $run_for, $extra, $input);
+            count += 1;
+        )*
+    };
+}
+
+pub fn assert_solution<P: Problem>(s: &str, extra: P::Extra, expected_1: &str, expected_2: &str) {
+    let state = ProblemState {
+        name: "test".into(),
+        is_example: false,
+        extra,
+    };
+
+    let input = P::parse(s, &state);
+
+    assert_eq!(Some(expected_1.to_string()), P::part_1(&input, &state));
+    assert_eq!(Some(expected_2.to_string()), P::part_2(&input, &state));
+}
+
+pub fn run_with_name<P: Problem>(
+    name: &str,
+    is_example: bool,
+    run_for: RunFor,
+    extra: P::Extra,
+    raw_input: &str,
+) {
     let problem_type = if !is_example { "Problem" } else { "Example" };
-    let full_name = &*format!("{}.1 {} {}", P::problem_number(), problem_type, name);
+
+    let mut state = ProblemState {
+        name: format!("{} {} {}", P::problem_number(), problem_type, name),
+        is_example,
+        extra,
+    };
+
+    let input = P::parse(raw_input, &state);
 
     // give our output a random color
     let random_color_index = (rand::random::<u8>() % 5) + 2;
     let color = format!("\u{001B}[3{}m", random_color_index);
 
-    benchmark(&color, full_name, || {
-        P::part_1(&input, full_name, is_example)
-    });
-    benchmark(&color, full_name, || {
-        P::part_2(&input, full_name, is_example)
-    });
-}
+    if run_for != RunFor::Part2 {
+        state.name = format!("{}.1 {} {}", P::problem_number(), problem_type, name);
 
-/// Can be used to run the same type of problem with multiple inputs and unique names
-#[macro_export]
-macro_rules! run {
-    ( $problem:ty; $is_example:expr, $( $input:expr ),+ ) => {
-        let mut count = 1;
-        $(
-            $crate::run_with_name::<$problem>($is_example, &*count.to_string(), $input);
-            count += 1;
-        )*
+        benchmark(&color, &*state.name, || P::part_1(&input, &state));
     }
-}
+    if run_for != RunFor::Part1 {
+        state.name = format!("{}.2 {} {}", P::problem_number(), problem_type, name);
 
-pub fn assert_solution<P: Problem>(s: &str, expected_1: &str, expected_2: &str) {
-    let input = P::parse(s);
-
-    assert_eq!(
-        Some(expected_1.to_string()),
-        P::part_1(&input, "test", false)
-    );
-    assert_eq!(
-        Some(expected_2.to_string()),
-        P::part_2(&input, "test", false)
-    );
+        benchmark(&color, &*state.name, || P::part_2(&input, &state));
+    }
 }
 
 fn benchmark<C>(color: &str, name: &str, runner: C)

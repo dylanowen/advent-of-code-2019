@@ -1,4 +1,4 @@
-use advent_of_code_2019::{run, Problem};
+use advent_of_code_2019::{run, Problem, ProblemState};
 use env_logger::Env;
 use std::ops::Range;
 
@@ -6,8 +6,9 @@ struct Four {}
 
 impl Problem for Four {
     type Input = Range<usize>;
+    type Extra = ();
 
-    fn parse(s: &str) -> Self::Input {
+    fn parse(s: &str, _state: &ProblemState<Self::Extra>) -> Self::Input {
         let ranges = s
             .split('-')
             .map(|n| n.parse::<usize>().expect("parse error"))
@@ -16,7 +17,7 @@ impl Problem for Four {
         ranges[0]..ranges[1]
     }
 
-    fn part_1(range: &Self::Input, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_1(range: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let valid_numbers = range
             .clone()
             .map(split)
@@ -25,7 +26,7 @@ impl Problem for Four {
         Some(format!("{}", valid_numbers.count()))
     }
 
-    fn part_2(range: &Self::Input, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_2(range: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let valid_numbers = range
             .clone()
             .map(split)
@@ -95,7 +96,7 @@ fn has_double_grouping(num: &[usize; 6]) -> bool {
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    run::<Four>(false, "278384-824795");
+    run::<Four>((), "278384-824795");
 }
 
 #[cfg(test)]
@@ -106,7 +107,7 @@ mod four {
 
     #[test]
     fn test() {
-        assert_solution::<Four>("278384-824795", "921", "603");
+        assert_solution::<Four>("278384-824795", (), "921", "603");
     }
 
     #[test]

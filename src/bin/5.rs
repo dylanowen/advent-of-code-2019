@@ -1,21 +1,22 @@
 use advent_of_code_2019::cpu::{parse_program, Execution, Memory};
-use advent_of_code_2019::{run, Problem};
+use advent_of_code_2019::{run, Problem, ProblemState};
 use env_logger::Env;
 
 struct Five {}
 
 impl Problem for Five {
     type Input = Memory;
+    type Extra = ();
 
-    fn parse(s: &str) -> Self::Input {
+    fn parse(s: &str, _state: &ProblemState<Self::Extra>) -> Self::Input {
         parse_program(s)
     }
 
-    fn part_1(program: &Self::Input, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_1(program: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
         execute_program(program, 1)
     }
 
-    fn part_2(program: &Self::Input, _name: &str, _is_example: bool) -> Option<String> {
+    fn part_2(program: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
         execute_program(program, 5)
     }
 
@@ -25,7 +26,7 @@ impl Problem for Five {
 }
 
 fn execute_program(program: &Memory, input: isize) -> Option<String> {
-    let mut execution: Execution = Execution::new_input(program.clone(), vec![input]);
+    let mut execution: Execution = Execution::new_input(program.to_owned(), vec![input]);
 
     execution.run().expect("This should always work");
 
@@ -40,7 +41,7 @@ fn execute_program(program: &Memory, input: isize) -> Option<String> {
 fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
-    run::<Five>(false, include_str!("5_input.txt"));
+    run::<Five>((), include_str!("5_input.txt"));
 }
 
 #[cfg(test)]
@@ -50,6 +51,6 @@ mod five {
 
     #[test]
     fn test() {
-        assert_solution::<Five>(include_str!("5_input.txt"), "5044655", "7408802");
+        assert_solution::<Five>(include_str!("5_input.txt"), (), "5044655", "7408802");
     }
 }
