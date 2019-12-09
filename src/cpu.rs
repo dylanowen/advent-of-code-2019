@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 use std::result;
 
-pub type IntCode = isize;
+pub type IntCode = i64;
 pub type Memory = Vec<IntCode>;
 
 #[derive(Debug, Clone)]
@@ -22,6 +22,7 @@ pub enum OpCode {
     JumpIfFalse,
     LessThan,
     Equals,
+    AdjustBase,
     Halt,
 }
 
@@ -38,6 +39,7 @@ impl OpCode {
             6 => Ok(OpCode::JumpIfFalse),
             7 => Ok(OpCode::LessThan),
             8 => Ok(OpCode::Equals),
+            9 => Ok(OpCode::AdjustBase),
             99 => Ok(OpCode::Halt),
             _ => Err(CPUError::InvalidOpCode),
         }
@@ -46,7 +48,7 @@ impl OpCode {
     pub fn instruction_size(&self) -> usize {
         match self {
             OpCode::Add | OpCode::Mul | OpCode::LessThan | OpCode::Equals => 4,
-            OpCode::Input | OpCode::Output => 2,
+            OpCode::Input | OpCode::Output | OpCode::AdjustBase => 2,
             OpCode::JumpIfTrue | OpCode::JumpIfFalse => 3,
             OpCode::Halt => 0,
         }
@@ -80,6 +82,7 @@ impl Instruction {
 pub enum Mode {
     Position,
     Immediate,
+    Relative,
 }
 
 impl Mode {
@@ -87,6 +90,7 @@ impl Mode {
         match int_code {
             0 => Ok(Mode::Position),
             1 => Ok(Mode::Immediate),
+            2 => Ok(Mode::Relative),
             _ => Err(CPUError::InvalidOpCode),
         }
     }
@@ -102,6 +106,7 @@ pub enum ExecutionState {
 #[derive(Debug, Clone)]
 pub struct Execution {
     pub ip: usize,
+    pub relative_base: usize,
     pub memory: Memory,
     pub input: VecDeque<IntCode>,
     pub output: VecDeque<IntCode>,
@@ -115,6 +120,7 @@ impl Execution {
     pub fn new_input(memory: Memory, input: Memory) -> Execution {
         Execution {
             ip: 0,
+            relative_base: 0,
             memory,
             input: input.into(),
             output: VecDeque::new(),
@@ -122,13 +128,13 @@ impl Execution {
     }
 
     pub fn run(&mut self) -> Result<ExecutionState> {
-        log::debug!("{:?}", self);
+        log::trace!("{:?}", self);
         let mut state = self.step()?;
         while state == ExecutionState::Running {
             state = self.step()?;
-            log::debug!("{:?}", self);
+            log::trace!("{:?}", self);
         }
-        log::debug!("{:?}", self);
+        log::trace!("{:?}", self);
 
         Ok(state)
     }
@@ -196,6 +202,12 @@ impl Execution {
                 };
                 ExecutionState::Running
             }
+            OpCode::AdjustBase => {
+                self.relative_base =
+                    ((self.relative_base as IntCode) + parameters.r1(self)) as usize;
+
+                ExecutionState::Running
+            }
             OpCode::Halt => ExecutionState::Halted,
         };
 
@@ -211,12 +223,21 @@ impl Index<usize> for Execution {
     type Output = IntCode;
 
     fn index(&self, address: usize) -> &Self::Output {
-        &self.memory[address]
+        if address >= self.memory.len() {
+            &0
+        } else {
+            &self.memory[address]
+        }
     }
 }
 
 impl IndexMut<usize> for Execution {
     fn index_mut(&mut self, address: usize) -> &mut Self::Output {
+        if address >= self.memory.len() {
+            let mut to_append = vec![0; address - self.memory.len() + 1];
+            self.memory.append(&mut to_append);
+        }
+
         &mut self.memory[address]
     }
 }
@@ -258,25 +279,36 @@ trait ParameterExtractor {
         self.write(2, execution)
     }
 
-    fn read(&self, offset: isize, execution: &Execution) -> IntCode;
+    fn read(&self, offset: IntCode, execution: &Execution) -> IntCode;
 
-    fn write<'a>(&self, offset: isize, execution: &'a mut Execution) -> &'a mut IntCode;
+    fn write<'a>(&self, offset: IntCode, execution: &'a mut Execution) -> &'a mut IntCode;
 }
 
 impl ParameterExtractor for [Mode; 3] {
-    fn read(&self, offset: isize, execution: &Execution) -> isize {
-        let value = execution[(execution.ip as isize + offset + 1) as usize];
+    fn read(&self, offset: IntCode, execution: &Execution) -> IntCode {
+        let value = execution[(execution.ip as IntCode + offset + 1) as usize];
         match self[offset as usize] {
             Mode::Position => execution[value as usize],
             Mode::Immediate => value,
+            Mode::Relative => {
+                let address = (execution.relative_base as IntCode) + value;
+                execution[address as usize]
+            }
         }
     }
 
-    fn write<'a>(&self, offset: isize, execution: &'a mut Execution) -> &'a mut isize {
+    fn write<'a>(&self, offset: IntCode, execution: &'a mut Execution) -> &'a mut IntCode {
         assert_ne!(self[offset as usize], Mode::Immediate);
 
-        let index = execution[(execution.ip as isize + offset + 1) as usize];
-        &mut execution[index as usize]
+        let value = execution[(execution.ip as IntCode + offset + 1) as usize];
+        match self[offset as usize] {
+            Mode::Position => &mut execution[value as usize],
+            Mode::Immediate => panic!("We should never write in imediate mode"),
+            Mode::Relative => {
+                let address = (execution.relative_base as IntCode) + value;
+                &mut execution[address as usize]
+            }
+        }
     }
 }
 

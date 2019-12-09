@@ -1,4 +1,4 @@
-use advent_of_code_2019::cpu::{parse_program, Execution, Memory};
+use advent_of_code_2019::cpu::{parse_program, Execution, IntCode, Memory};
 use advent_of_code_2019::{run, Problem, ProblemState};
 use env_logger::Env;
 
@@ -25,7 +25,7 @@ impl Problem for Five {
     }
 }
 
-fn execute_program(program: &Memory, input: isize) -> Option<String> {
+fn execute_program(program: &Memory, input: IntCode) -> Option<String> {
     let mut execution: Execution = Execution::new_input(program.to_owned(), vec![input]);
 
     execution.run().expect("This should always work");
