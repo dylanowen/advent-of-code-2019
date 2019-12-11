@@ -86,10 +86,6 @@ impl<T: Clone + Default> Grid<T> {
         let y_index = raw_y as usize;
 
         if raw_x < 0 {
-            println!(
-                "raw_x < 0, {} {} {} {} {}",
-                self.width, self.x_offset, self.y_offset, raw_x, x
-            );
             let new_columns = raw_x.abs() as usize;
             for i in 0..self.grid.len() {
                 let mut to_prepend = vec![Default::default(); new_columns];
