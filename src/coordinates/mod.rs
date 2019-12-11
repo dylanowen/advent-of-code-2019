@@ -114,6 +114,14 @@ impl<T: Clone + Default> Grid<T> {
         mem::replace(&mut self.grid[y_index][x_index], value)
     }
 
+    pub fn enumerate(&self) -> GridEnumerator<T> {
+        GridEnumerator {
+            grid: self,
+            x: self.x_min(),
+            y: self.y_min(),
+        }
+    }
+
     pub fn x_min(&self) -> isize {
         self.x_offset
     }
@@ -123,12 +131,12 @@ impl<T: Clone + Default> Grid<T> {
     }
 
     // exclusive max
-    fn x_max(&self) -> isize {
+    pub fn x_max(&self) -> isize {
         self.x_min() + (self.width() as isize)
     }
 
     // exclusive max
-    fn y_max(&self) -> isize {
+    pub fn y_max(&self) -> isize {
         self.y_min() + (self.height() as isize)
     }
 
@@ -178,12 +186,48 @@ impl<T: Clone + Default> Grid<T> {
 }
 
 impl<T: fmt::Display + Clone + Default> Grid<T> {
-    pub fn print(&self) {
+    pub fn print_bottom_up(&self) {
         for y in (self.y_min()..self.y_max()).rev() {
             for x in self.x_min()..self.x_max() {
                 print!("{}", self.get(x as isize, y as isize));
             }
             println!();
+        }
+    }
+
+    pub fn print_top_down(&self) {
+        for y in self.y_min()..self.y_max() {
+            for x in self.x_min()..self.x_max() {
+                print!("{}", self.get(x as isize, y as isize));
+            }
+            println!();
+        }
+    }
+}
+
+pub struct GridEnumerator<'a, T: Clone + Default> {
+    grid: &'a Grid<T>,
+    x: isize,
+    y: isize,
+}
+
+impl<'a, T: Clone + Default> Iterator for GridEnumerator<'a, T> {
+    type Item = (isize, isize, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // check if we've iterated past the grid
+        if self.y < self.grid.y_max() {
+            let result = Some((self.x, self.y, self.grid.get(self.x, self.y)));
+
+            self.x += 1;
+            if self.x >= self.grid.x_max() {
+                self.x = self.grid.x_min();
+                self.y += 1;
+            }
+
+            result
+        } else {
+            None
         }
     }
 }
