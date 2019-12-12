@@ -1,3 +1,4 @@
+use advent_of_code_2019::coordinates::point::Point;
 use advent_of_code_2019::coordinates::Grid;
 use advent_of_code_2019::cpu::{parse_program, Execution, ExecutionState, Memory};
 use advent_of_code_2019::{run, Problem, ProblemState};
@@ -70,7 +71,7 @@ impl Problem for Eleven {
 
         let painted_panels = panels
             .enumerate()
-            .filter(|(_, _, (_, painted))| *painted)
+            .filter(|(_, (_, painted))| *painted)
             .count();
 
         Some(format!("{}", painted_panels))
@@ -174,7 +175,7 @@ fn render_panels(panels: &Grid<PanelColor>) -> String {
     let mut min_y = std::isize::MAX;
     let mut max_y = std::isize::MIN;
 
-    for (x, y, color) in panels.enumerate() {
+    for (Point { x, y }, color) in panels.enumerate() {
         if PanelColor::White == *color {
             min_x = min_x.min(x);
             max_x = max_x.max(x);

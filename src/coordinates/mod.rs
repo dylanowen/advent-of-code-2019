@@ -1,22 +1,11 @@
+use crate::coordinates::point::{Point, PointLike};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::ops::RangeInclusive;
 use std::path::Path;
 use std::{fmt, mem};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct Point {
-    pub x: isize,
-    pub y: isize,
-}
-
-pub static ZERO_POINT: Point = Point { x: 0, y: 0 };
-
-impl Point {
-    pub fn distance(&self, other: &Point) -> usize {
-        ((self.x - other.x).abs() + (self.y - other.y).abs()) as usize
-    }
-}
+pub mod point;
 
 #[derive(Clone, Hash)]
 pub struct Grid<T: Clone> {
@@ -113,8 +102,10 @@ impl<T: Clone + Default> Grid<T> {
     pub fn enumerate(&self) -> GridEnumerator<T> {
         GridEnumerator {
             grid: self,
-            x: self.x_min(),
-            y: self.y_min(),
+            location: Point {
+                x: self.x_min(),
+                y: self.y_min(),
+            },
         }
     }
 
@@ -203,22 +194,24 @@ impl<T: fmt::Display + Clone + Default> Grid<T> {
 
 pub struct GridEnumerator<'a, T: Clone + Default> {
     grid: &'a Grid<T>,
-    x: isize,
-    y: isize,
+    location: Point,
 }
 
 impl<'a, T: Clone + Default> Iterator for GridEnumerator<'a, T> {
-    type Item = (isize, isize, &'a T);
+    type Item = (Point, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
         // check if we've iterated past the grid
-        if self.y < self.grid.y_max() {
-            let result = Some((self.x, self.y, self.grid.get(self.x, self.y)));
+        if self.location.y() < self.grid.y_max() {
+            let result = Some((
+                (self.location),
+                self.grid.get(self.location.x, self.location.y),
+            ));
 
-            self.x += 1;
-            if self.x >= self.grid.x_max() {
-                self.x = self.grid.x_min();
-                self.y += 1;
+            *self.location.x_mut() += 1;
+            if self.location.x() >= self.grid.x_max() {
+                *self.location.x_mut() = self.grid.x_min();
+                *self.location.y_mut() += 1;
             }
 
             result

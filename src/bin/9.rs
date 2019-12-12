@@ -26,7 +26,7 @@ impl Problem for Nine {
     }
 }
 
-fn execute_program(program: &Memory, input: Vec<IntCode>) -> Option<String> {
+fn execute_program(program: &[IntCode], input: Vec<IntCode>) -> Option<String> {
     let mut execution: Execution = Execution::new_input(program.to_owned(), input);
 
     execution.run().expect("This should always work");

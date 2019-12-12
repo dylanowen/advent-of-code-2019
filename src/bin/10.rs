@@ -1,8 +1,7 @@
+use advent_of_code_2019::coordinates::point::{Point, PointLike};
 use advent_of_code_2019::coordinates::Grid;
-use advent_of_code_2019::cpu::{parse_program, Execution, IntCode, Memory};
 use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
 use env_logger::Env;
-use std::fmt::{Display, Error, Formatter};
 
 struct Ten {}
 
@@ -24,6 +23,7 @@ impl Problem for Ten {
             })
             .collect();
 
+        #[allow(clippy::range_minus_one)]
         let mut grid: Grid<bool> = Grid::new_with_dimensions(
             0..=raw_asteroids[0].len() as isize - 1,
             0..=raw_asteroids.len() as isize - 1,
@@ -39,44 +39,70 @@ impl Problem for Ten {
     }
 
     fn part_1(asteroids: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
-        let (_, _, best_detection) = find_best_location(asteroids);
+        let (_, best_detection) = find_best_location(asteroids);
         Some(format!("{}", best_detection))
     }
 
     fn part_2(asteroids: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
-        let (station_x, station_y, _) = find_best_location(asteroids);
+        log::trace!("{}", render_asteroids(asteroids));
 
-        println!("station {},{}", station_x, station_y);
+        let (station, _) = find_best_location(asteroids);
 
-        let mut targets: Vec<(isize, isize, f64)> = asteroids
+        let mut targets: Vec<(Point, f64)> = asteroids
             .enumerate()
-            .filter(|(x, y, a)| **a && !(*x == station_x && *y == station_y))
-            .map(|(x, y, _)| {
+            .filter(|(point, a)| **a && !point.eq(&station))
+            .map(|(point, _)| {
                 // calculate the angle
-                let v_x = x - station_x;
-                let v_y = y - station_y;
+                let v = point.sub(&station);
 
-                let mut angle = (v_y as f64).atan2(v_x as f64) + std::f64::consts::FRAC_PI_2;
+                let mut angle = (v.y() as f64).atan2(v.x() as f64) + std::f64::consts::FRAC_PI_2;
 
                 // since up is 0 for us, normalize our angle (this could probably be more elegant)
                 if angle < 0.0 {
                     angle += std::f64::consts::PI * 2.0;
                 }
 
-                (x, y, angle)
+                (point, angle)
             })
             .collect();
 
-        targets.sort_by(|(_, _, a_angle), (_, _, b_angle)| a_angle.partial_cmp(b_angle).unwrap());
+        targets.sort_by(|(_, a_angle), (_, b_angle)| a_angle.partial_cmp(b_angle).unwrap());
 
-        // cluster them into Vec<Vec<(isize, isize, f64)>> that are inline with each other.
-        // loop 0..200
-        // get the next cluster, find the closest
-        // next
+        let mut clustered: Vec<Vec<Point>> = vec![vec![(targets[0].0)]];
+        let mut last_inc = reduce(
+            targets[0].0.x() - station.x(),
+            targets[0].0.y() - station.y(),
+        );
+        let mut i = 0;
+        for (other, _) in targets.iter().skip(1) {
+            let inc = reduce(other.x() - station.x(), other.y() - station.y());
+            if inc.x() == last_inc.x() && inc.y() == last_inc.y() {
+                clustered[i].push(*other)
+            } else {
+                clustered[i].sort_by(|a, b| b.distance(&station).cmp(&a.distance(&station)));
+                clustered.push(vec![*other]);
+                i += 1;
+            }
+            last_inc = inc;
+        }
 
-        println!("{:?}", targets);
+        let mut i = 0;
+        let mut last = Point::new(0, 0);
+        for _ in 0..200 {
+            if i > clustered.len() {
+                i = 0;
+            }
 
-        None
+            last = clustered[i].pop().unwrap();
+
+            if clustered[i].is_empty() {
+                clustered.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+
+        Some(format!("{}", last.x() * 100 + last.y()))
     }
 
     fn problem_number() -> usize {
@@ -84,57 +110,53 @@ impl Problem for Ten {
     }
 }
 
-fn find_best_location(asteroids: &Grid<bool>) -> (isize, isize, usize) {
-    let mut best_x = 0;
-    let mut best_y = 0;
+fn find_best_location(asteroids: &Grid<bool>) -> (Point, usize) {
+    let mut best = Point::new(0, 0);
     let mut best_detection = 0;
-    for (potential_x, potential_y, _) in asteroids.enumerate().filter(|(_, _, a)| **a) {
-        let other_asteroids = asteroids
-            .enumerate()
-            .filter(|(x, y, a)| **a && !(*x == potential_x && *y == potential_y));
+    for (potential, _) in asteroids.enumerate().filter(|(_, a)| **a) {
+        let other_asteroids = asteroids.enumerate().filter(|(point, a)| {
+            **a && !(point.x() == potential.x() && point.y() == potential.y())
+        });
 
         let mut detected = 0;
-        for (other_x, other_y, _) in other_asteroids {
-            let (inc_x, inc_y) = reduce(other_x - potential_x, other_y - potential_y);
-            let mut x = potential_x + inc_x;
-            let mut y = potential_y + inc_y;
+        for (other, _) in other_asteroids {
+            let delta = reduce(other.x() - potential.x(), other.y() - potential.y());
+            let mut next = potential.add(&delta);
 
-            while !*asteroids.get(x, y) {
-                x += inc_x;
-                y += inc_y;
+            while !*asteroids.get(next.x(), next.y()) {
+                next.inc(&delta);
             }
 
             // if we ended on our other asteroid, that means there was no obstruction in sight
-            if x == other_x && y == other_y {
+            if next == other {
                 detected += 1;
             }
         }
 
         if detected > best_detection {
             best_detection = detected;
-            best_x = potential_x;
-            best_y = potential_y;
-            log::trace!("{},{} detected {}", best_y, potential_y, best_detection);
+            best = potential;
+            log::trace!("{},{} detected {}", best.x(), best.y(), best_detection);
         }
     }
 
-    (best_x, best_y, best_detection)
+    (best, best_detection)
 }
 
-fn print_asteroids(grid: &Grid<bool>) {
+fn render_asteroids(grid: &Grid<bool>) -> String {
+    let mut output = String::new();
     for y in grid.y_min()..grid.y_max() {
         for x in grid.x_min()..grid.x_max() {
-            print!(
-                "{}",
-                if *grid.get(x as isize, y as isize) {
-                    '#'
-                } else {
-                    '.'
-                }
-            );
+            if *grid.get(x as isize, y as isize) {
+                output.push('#');
+            } else {
+                output.push('.');
+            }
         }
-        println!();
+        output.push('\n');
     }
+
+    output
 }
 
 fn reduce(mut one: isize, mut two: isize) -> (isize, isize) {
@@ -145,8 +167,8 @@ fn reduce(mut one: isize, mut two: isize) -> (isize, isize) {
     } else {
         loop {
             let gcd = find_gcd(one, two);
-            one = one / gcd;
-            two = two / gcd;
+            one /= gcd;
+            two /= gcd;
 
             if gcd == one || gcd == two || gcd == 1 {
                 return (one, two);
@@ -164,8 +186,6 @@ fn find_gcd(mut one: isize, mut two: isize) -> isize {
 
     if lower == 0 {
         upper
-    } else if upper == 0 {
-        lower
     } else {
         loop {
             let remainder = upper % lower;
@@ -183,38 +203,33 @@ fn main() {
     env_logger::init_from_env(Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"));
 
     example!(Ten;
-    //        RunFor::Part1, (), r#".#..#
-    //.....
-    //#####
-    //....#
-    //...##"#,
-    //        RunFor::Both, (), r#".#..##.###...#######
-    //##.############..##.
-    //.#.######.########.#
-    //.###.#######.####.#.
-    //#####.##.#.##.###.##
-    //..#####..#.#########
-    //####################
-    //#.####....###.#.#.##
-    //##.#################
-    //#####.##.###..####..
-    //..######..##.#######
-    //####.##.####...##..#
-    //.#####..#.######.###
-    //##...#.##########...
-    //#.##########.#######
-    //.####.#.###.###.#.##
-    //....##.##.###..#####
-    //.#.#.###########.###
-    //#.#.#.#####.####.###
-    //###.##.####.##.#..##"#,
-            RunFor::Part2, (), r#".#....#####...#..
-##...##.#####..##
-##...#...#.#####.
-..#.....#...###..
-..#.#.....#....##"#
-        );
-    //run::<Ten>((), include_str!("10_input.txt"));
+        RunFor::Part1, (), r#".#..#
+.....
+#####
+....#
+...##"#,
+    RunFor::Both, (), r#".#..##.###...#######
+##.############..##.
+.#.######.########.#
+.###.#######.####.#.
+#####.##.#.##.###.##
+..#####..#.#########
+####################
+#.####....###.#.#.##
+##.#################
+#####.##.###..####..
+..######..##.#######
+####.##.####...##..#
+.#####..#.######.###
+##...#.##########...
+#.##########.#######
+.####.#.###.###.#.##
+....##.##.###..#####
+.#.#.###########.###
+#.#.#.#####.####.###
+###.##.####.##.#..##"#
+    );
+    run::<Ten>((), include_str!("10_input.txt"));
 }
 
 #[cfg(test)]
@@ -224,7 +239,7 @@ mod ten {
 
     #[test]
     fn test() {
-        assert_solution::<Ten>(include_str!("9_input.txt"), (), "3280416268", "80210");
+        assert_solution::<Ten>(include_str!("10_input.txt"), (), "319", "517");
     }
 
     #[test]

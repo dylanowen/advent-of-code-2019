@@ -25,7 +25,7 @@ impl Problem for Five {
     }
 }
 
-fn execute_program(program: &Memory, input: IntCode) -> Option<String> {
+fn execute_program(program: &[IntCode], input: IntCode) -> Option<String> {
     let mut execution: Execution = Execution::new_input(program.to_owned(), vec![input]);
 
     execution.run().expect("This should always work");
