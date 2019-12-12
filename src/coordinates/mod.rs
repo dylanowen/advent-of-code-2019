@@ -1,11 +1,11 @@
-use crate::coordinates::point::{Point, PointLike};
+use crate::coordinates::two_d::{Point, PointLike};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::ops::RangeInclusive;
 use std::path::Path;
 use std::{fmt, mem};
 
-pub mod point;
+pub mod two_d;
 
 #[derive(Clone, Hash)]
 pub struct Grid<T: Clone> {

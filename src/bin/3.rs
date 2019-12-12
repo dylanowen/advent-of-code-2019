@@ -1,4 +1,4 @@
-use advent_of_code_2019::coordinates::point::{Point, PointLike, ZERO_POINT};
+use advent_of_code_2019::coordinates::two_d::{Point, PointLike, ZERO_POINT};
 use advent_of_code_2019::coordinates::Grid;
 use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
 use env_logger::Env;

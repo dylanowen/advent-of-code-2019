@@ -1,4 +1,4 @@
-use advent_of_code_2019::coordinates::point::Point;
+use advent_of_code_2019::coordinates::two_d::Point;
 use advent_of_code_2019::coordinates::Grid;
 use advent_of_code_2019::cpu::{parse_program, Execution, ExecutionState, Memory};
 use advent_of_code_2019::{run, Problem, ProblemState};
@@ -100,7 +100,7 @@ impl Problem for Eleven {
     }
 
     fn problem_number() -> usize {
-        10
+        11
     }
 }
 

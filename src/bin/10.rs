@@ -1,7 +1,8 @@
-use advent_of_code_2019::coordinates::point::{Point, PointLike};
+use advent_of_code_2019::coordinates::two_d::{Point, PointLike};
 use advent_of_code_2019::coordinates::Grid;
 use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
 use env_logger::Env;
+use num::Integer;
 
 struct Ten {}
 
@@ -166,34 +167,12 @@ fn reduce(mut one: isize, mut two: isize) -> (isize, isize) {
         (one / one.abs(), 0)
     } else {
         loop {
-            let gcd = find_gcd(one, two);
+            let gcd = one.gcd(&two);
             one /= gcd;
             two /= gcd;
 
             if gcd == one || gcd == two || gcd == 1 {
                 return (one, two);
-            }
-        }
-    }
-}
-
-/// https://en.wikipedia.org/wiki/Greatest_common_divisor#Euclid.27s_algorithm
-fn find_gcd(mut one: isize, mut two: isize) -> isize {
-    one = one.abs();
-    two = two.abs();
-    let mut upper = one.max(two);
-    let mut lower = one.min(two);
-
-    if lower == 0 {
-        upper
-    } else {
-        loop {
-            let remainder = upper % lower;
-            if remainder == 0 {
-                return lower;
-            } else {
-                upper = lower;
-                lower = remainder;
             }
         }
     }
@@ -240,15 +219,6 @@ mod ten {
     #[test]
     fn test() {
         assert_solution::<Ten>(include_str!("10_input.txt"), (), "319", "517");
-    }
-
-    #[test]
-    fn euclids_gcd() {
-        assert_eq!(find_gcd(48, 18), 6);
-        assert_eq!(find_gcd(18, 48), 6);
-        assert_eq!(find_gcd(-48, 18), 6);
-        assert_eq!(find_gcd(-48, -18), 6);
-        assert_eq!(find_gcd(12, 0), 12);
     }
 
     #[test]

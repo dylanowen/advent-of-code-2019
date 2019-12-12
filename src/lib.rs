@@ -52,8 +52,8 @@ pub fn assert_solution<P: Problem>(s: &str, extra: P::Extra, expected_1: &str, e
 
     let input = P::parse(s, &state);
 
-    assert_eq!(Some(expected_1.to_string()), P::part_1(&input, &state));
-    assert_eq!(Some(expected_2.to_string()), P::part_2(&input, &state));
+    assert_eq!(P::part_1(&input, &state), Some(expected_1.to_string()));
+    assert_eq!(P::part_2(&input, &state), Some(expected_2.to_string()));
 }
 
 pub fn run_with_name<P: Problem>(
