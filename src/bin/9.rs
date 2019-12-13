@@ -1,5 +1,6 @@
 use advent_of_code_2019::cpu::{parse_program, Execution, IntCode, Memory};
-use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
+use advent_of_code_2019::example;
+use advent_of_code_2019::problem::{run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 
 struct Nine {}
@@ -50,7 +51,7 @@ fn main() {
 #[cfg(test)]
 mod nine {
     use super::*;
-    use advent_of_code_2019::assert_solution;
+    use advent_of_code_2019::problem::assert_solution;
 
     #[test]
     fn test() {

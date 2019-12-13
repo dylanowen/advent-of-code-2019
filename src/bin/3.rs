@@ -1,6 +1,7 @@
 use advent_of_code_2019::coordinates::two_d::{Point, PointLike, ZERO_POINT};
 use advent_of_code_2019::coordinates::Grid;
-use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
+use advent_of_code_2019::example;
+use advent_of_code_2019::problem::{run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 use std::ops::RangeInclusive;
 
@@ -223,7 +224,7 @@ fn main() {
 #[cfg(test)]
 mod three {
     use super::*;
-    use advent_of_code_2019::assert_solution;
+    use advent_of_code_2019::problem::assert_solution;
 
     #[test]
     #[ignore] // this code is annoyingly slow

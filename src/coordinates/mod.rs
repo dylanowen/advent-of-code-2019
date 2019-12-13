@@ -5,10 +5,11 @@ use std::ops::RangeInclusive;
 use std::path::Path;
 use std::{fmt, mem};
 
+pub mod canvas;
 pub mod two_d;
 
 #[derive(Clone, Hash)]
-pub struct Grid<T: Clone> {
+pub struct Grid<T> {
     x_offset: isize,
     y_offset: isize,
     width: usize,
@@ -16,6 +17,69 @@ pub struct Grid<T: Clone> {
     grid: Vec<Vec<T>>,
 
     default: T,
+}
+
+impl<T> Grid<T> {
+    pub fn get(&self, x: isize, y: isize) -> &T {
+        let raw_x = self.raw_x(x);
+        let raw_y = self.raw_y(y);
+
+        if raw_x >= 0
+            && raw_y >= 0
+            && raw_y < self.grid.len() as isize
+            && raw_x < self.grid[raw_y as usize].len() as isize
+        {
+            &self.grid[raw_y as usize][raw_x as usize]
+        } else {
+            &self.default
+        }
+    }
+
+    pub fn x_min(&self) -> isize {
+        self.x_offset
+    }
+
+    pub fn y_min(&self) -> isize {
+        self.y_offset
+    }
+
+    // exclusive max
+    pub fn x_max(&self) -> isize {
+        self.x_min() + (self.width() as isize)
+    }
+
+    // exclusive max
+    pub fn y_max(&self) -> isize {
+        self.y_min() + (self.height() as isize)
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.grid.len()
+    }
+
+    pub fn raw_x(&self, x: isize) -> isize {
+        x - self.x_min()
+    }
+
+    pub fn raw_y(&self, y: isize) -> isize {
+        y - self.y_min()
+    }
+}
+
+impl<T: Default> Grid<T> {
+    pub fn enumerate(&self) -> GridEnumerator<T> {
+        GridEnumerator {
+            grid: self,
+            location: Point {
+                x: self.x_min(),
+                y: self.y_min(),
+            },
+        }
+    }
 }
 
 impl<T: Clone + Default> Grid<T> {
@@ -36,21 +100,6 @@ impl<T: Clone + Default> Grid<T> {
             width,
             grid: vec![vec![Default::default(); width]; height],
             default: Default::default(),
-        }
-    }
-
-    pub fn get(&self, x: isize, y: isize) -> &T {
-        let raw_x = self.raw_x(x);
-        let raw_y = self.raw_y(y);
-
-        if raw_x >= 0
-            && raw_y >= 0
-            && raw_y < self.grid.len() as isize
-            && raw_x < self.grid[raw_y as usize].len() as isize
-        {
-            &self.grid[raw_y as usize][raw_x as usize]
-        } else {
-            &self.default
         }
     }
 
@@ -99,50 +148,6 @@ impl<T: Clone + Default> Grid<T> {
         mem::replace(&mut self.grid[y_index][x_index], value)
     }
 
-    pub fn enumerate(&self) -> GridEnumerator<T> {
-        GridEnumerator {
-            grid: self,
-            location: Point {
-                x: self.x_min(),
-                y: self.y_min(),
-            },
-        }
-    }
-
-    pub fn x_min(&self) -> isize {
-        self.x_offset
-    }
-
-    pub fn y_min(&self) -> isize {
-        self.y_offset
-    }
-
-    // exclusive max
-    pub fn x_max(&self) -> isize {
-        self.x_min() + (self.width() as isize)
-    }
-
-    // exclusive max
-    pub fn y_max(&self) -> isize {
-        self.y_min() + (self.height() as isize)
-    }
-
-    fn width(&self) -> usize {
-        self.width
-    }
-
-    fn height(&self) -> usize {
-        self.grid.len()
-    }
-
-    fn raw_x(&self, x: isize) -> isize {
-        x - self.x_min()
-    }
-
-    fn raw_y(&self, y: isize) -> isize {
-        y - self.y_min()
-    }
-
     pub fn write_image<F>(&self, path: &str, converter: F)
     where
         F: Fn(&T) -> [u8; 4],
@@ -172,7 +177,7 @@ impl<T: Clone + Default> Grid<T> {
     }
 }
 
-impl<T: fmt::Display + Clone + Default> Grid<T> {
+impl<T: fmt::Display + Default> Grid<T> {
     pub fn print_bottom_up(&self) {
         for y in (self.y_min()..self.y_max()).rev() {
             for x in self.x_min()..self.x_max() {
@@ -192,12 +197,12 @@ impl<T: fmt::Display + Clone + Default> Grid<T> {
     }
 }
 
-pub struct GridEnumerator<'a, T: Clone + Default> {
+pub struct GridEnumerator<'a, T: Default> {
     grid: &'a Grid<T>,
     location: Point,
 }
 
-impl<'a, T: Clone + Default> Iterator for GridEnumerator<'a, T> {
+impl<'a, T: Default> Iterator for GridEnumerator<'a, T> {
     type Item = (Point, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {

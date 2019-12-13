@@ -1,4 +1,5 @@
-use advent_of_code_2019::{example, run, Problem, ProblemState, RunFor};
+use advent_of_code_2019::example;
+use advent_of_code_2019::problem::{run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 use num::Integer;
 use regex::Regex;
@@ -163,7 +164,7 @@ impl Problem for Twelve {
     }
 
     fn problem_number() -> usize {
-        11
+        12
     }
 }
 
@@ -185,7 +186,7 @@ fn main() {
 #[cfg(test)]
 mod twelve {
     use super::*;
-    use advent_of_code_2019::assert_solution;
+    use advent_of_code_2019::problem::assert_solution;
 
     #[test]
     fn test() {

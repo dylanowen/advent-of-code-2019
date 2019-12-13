@@ -1,5 +1,5 @@
 use advent_of_code_2019::cpu::{parse_program, Execution, IntCode, Memory};
-use advent_of_code_2019::{run, Problem, ProblemState};
+use advent_of_code_2019::problem::{run, Problem, ProblemState};
 use env_logger::Env;
 
 struct Five {}
@@ -47,7 +47,7 @@ fn main() {
 #[cfg(test)]
 mod five {
     use super::*;
-    use advent_of_code_2019::assert_solution;
+    use advent_of_code_2019::problem::assert_solution;
 
     #[test]
     fn test() {

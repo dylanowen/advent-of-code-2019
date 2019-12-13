@@ -1,0 +1,19 @@
+{
+  "name": "advent-of-code-2019",
+  "collaborators": [
+    "Dylan Owen <dyltotheo@gmail.com>"
+  ],
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dylanowen/advent-of-code-2019"
+  },
+  "files": [
+    "advent_of_code_2019_bg.wasm",
+    "advent_of_code_2019.js",
+    "advent_of_code_2019.d.ts"
+  ],
+  "browser": "advent_of_code_2019.js",
+  "homepage": "https://github.com/dylanowen/advent-of-code-2019",
+  "types": "advent_of_code_2019.d.ts"
+}

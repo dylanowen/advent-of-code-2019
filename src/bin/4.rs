@@ -1,4 +1,4 @@
-use advent_of_code_2019::{run, Problem, ProblemState};
+use advent_of_code_2019::problem::{run, Problem, ProblemState};
 use env_logger::Env;
 use std::ops::Range;
 
@@ -103,7 +103,7 @@ fn main() {
 mod four {
     use super::*;
 
-    use advent_of_code_2019::assert_solution;
+    use advent_of_code_2019::problem::assert_solution;
 
     #[test]
     fn test() {

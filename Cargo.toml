@@ -10,6 +10,9 @@ repository = "https://github.com/dylanowen/advent-of-code-2019"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 log = "0.4"
 env_logger = "0.7"
@@ -19,3 +22,20 @@ num = "0.2"
 rand = "0.6.1"
 png = "0.15.1"
 permutohedron = "0.2"
+
+# wasm dependencies
+futures = "0.1"
+js-sys = "0.3"
+wasm-bindgen = "0.2.55"
+wasm-bindgen-futures = "0.3"
+console_error_panic_hook = "0.1.5"
+
+[dependencies.web-sys]
+version = "0.3.32"
+features = [
+  'console',
+
+  'HtmlCanvasElement',
+  'CanvasRenderingContext2d',
+  'ImageData',
+]

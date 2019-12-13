@@ -1,7 +1,7 @@
 use advent_of_code_2019::coordinates::two_d::Point;
 use advent_of_code_2019::coordinates::Grid;
 use advent_of_code_2019::cpu::{parse_program, Execution, ExecutionState, Memory};
-use advent_of_code_2019::{run, Problem, ProblemState};
+use advent_of_code_2019::problem::{run, Problem, ProblemState};
 use env_logger::Env;
 use std::fmt::{Display, Error, Formatter, Write};
 
@@ -208,7 +208,7 @@ fn main() {
 #[cfg(test)]
 mod eleven {
     use super::*;
-    use advent_of_code_2019::assert_solution;
+    use advent_of_code_2019::problem::assert_solution;
 
     #[test]
     fn test() {

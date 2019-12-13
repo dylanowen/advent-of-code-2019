@@ -12,6 +12,7 @@ clippy:
 
 build: format clippy
 	cargo build $(RFLAGS)
+	wasm-pack build --target no-modules
 
 test: build
 	cargo test $(RFLAGS)

@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 use std::result;
+use wasm_bindgen::prelude::*;
 
 pub type IntCode = i64;
 pub type Memory = Vec<IntCode>;
@@ -96,6 +97,7 @@ impl Mode {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExecutionState {
     Running,
@@ -217,6 +219,12 @@ impl Execution {
 
         Ok(state)
     }
+
+    pub fn expect_pop(&mut self) -> IntCode {
+        self.output
+            .pop_front()
+            .expect("Expected an output from our program")
+    }
 }
 
 impl Index<usize> for Execution {
@@ -316,7 +324,7 @@ impl ParameterExtractor for [Mode; 3] {
 pub fn parse_program(raw_memory: &str) -> Memory {
     raw_memory
         .split(',')
-        .map(|s| s.parse::<IntCode>().expect("parse error"))
+        .map(|s| s.trim().parse::<IntCode>().expect("parse error"))
         .collect()
 }
 
