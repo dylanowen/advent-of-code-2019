@@ -15,14 +15,15 @@ export class ThirteenGame {
   free(): void;
 /**
 * @param {any} canvas 
+* @param {boolean} auto_play 
 * @returns {ThirteenGame} 
 */
-  constructor(canvas: any);
+  constructor(canvas: any, auto_play: boolean);
 /**
-* @param {number} input 
+* @param {number} user_input 
 * @returns {number} 
 */
-  step(input: number): number;
+  step(user_input: number): number;
 /**
 */
   render_game(): void;

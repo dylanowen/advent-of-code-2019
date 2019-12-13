@@ -159,22 +159,23 @@ class ThirteenGame {
     }
     /**
     * @param {any} canvas
+    * @param {boolean} auto_play
     * @returns {ThirteenGame}
     */
-    constructor(canvas) {
+    constructor(canvas, auto_play) {
         try {
-            const ret = wasm.thirteengame_new(addBorrowedObject(canvas));
+            const ret = wasm.thirteengame_new(addBorrowedObject(canvas), auto_play);
             return ThirteenGame.__wrap(ret);
         } finally {
             heap[stack_pointer++] = undefined;
         }
     }
     /**
-    * @param {number} input
+    * @param {number} user_input
     * @returns {number}
     */
-    step(input) {
-        const ret = wasm.thirteengame_step(this.ptr, input);
+    step(user_input) {
+        const ret = wasm.thirteengame_step(this.ptr, user_input);
         return ret;
     }
     /**

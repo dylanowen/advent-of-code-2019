@@ -81,6 +81,7 @@ mod wasm {
     use crate::cpu::{parse_program, ExecutionState};
     use wasm_bindgen::prelude::*;
     use wasm_bindgen::Clamped;
+    use wasm_bindgen::__rt::std::collections::VecDeque;
     use wasm_bindgen::{JsCast, JsValue};
     use web_sys::console;
     use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
@@ -91,6 +92,7 @@ mod wasm {
     pub struct ThirteenGame {
         execution: Execution,
         screen: Grid<Tile>,
+        auto_play: VecDeque<IntCode>,
         score: i64,
         image_dimensions: (u32, u32),
         image_data: Vec<u8>,
@@ -100,7 +102,7 @@ mod wasm {
     #[wasm_bindgen]
     impl ThirteenGame {
         #[wasm_bindgen(constructor)]
-        pub fn new(canvas: &HtmlCanvasElement) -> Result<ThirteenGame, JsValue> {
+        pub fn new(canvas: &HtmlCanvasElement, auto_play: bool) -> Result<ThirteenGame, JsValue> {
             let mut paid_program = parse_program(include_str!("../thirteen/13_input.txt")).clone();
             // pay 2 "quarters" for our game
             paid_program[0] = 2;
@@ -113,6 +115,14 @@ mod wasm {
                 (screen.width() * PIXEL_SIZE) as u32,
                 (screen.height() * PIXEL_SIZE) as u32,
             );
+
+            let auto_play_data = if auto_play {
+                VecDeque::from(parse_program(include_str!(
+                    "../thirteen/13_perfect_game.txt"
+                )))
+            } else {
+                VecDeque::new()
+            };
 
             console::log_1(
                 &format!(
@@ -137,6 +147,7 @@ mod wasm {
             Ok(ThirteenGame {
                 execution,
                 screen,
+                auto_play: auto_play_data,
                 score: 0,
                 image_dimensions,
                 image_data,
@@ -144,7 +155,13 @@ mod wasm {
             })
         }
 
-        pub fn step(&mut self, input: isize) -> Result<ExecutionState, JsValue> {
+        pub fn step(&mut self, user_input: isize) -> Result<ExecutionState, JsValue> {
+            let input = if let Some(auto_input) = self.auto_play.pop_front() {
+                auto_input
+            } else {
+                user_input as i64
+            };
+
             self.execution.input.push_back(input as i64);
             let state = self
                 .execution

@@ -14,10 +14,20 @@
 <canvas id="screen"></canvas><br />
 Score: <span id="score"></span><br />
 <input type="button" value="Restart" id="restart"/>
+<input type="button" value="My Winning Game" id="auto"/>
 <script>
     LibReady('advent_of_code_2019')
         .then((lib) => {
             const canvas = document.getElementById('screen');
+            const scoreField = document.getElementById('score');
+            const restartButton = document.getElementById('restart');
+            const autoPlayButton = document.getElementById('auto');
+            let isAutoPlay = false;
+
+            autoPlayButton.addEventListener('click', () => {
+                isAutoPlay = !isAutoPlay;
+                startGame();
+            });
 
             let game = null;
             let state;
@@ -27,17 +37,16 @@ Score: <span id="score"></span><br />
                     game.free();
                 }
 
-                game = new lib.ThirteenGame(canvas);
+                game = new lib.ThirteenGame(canvas, isAutoPlay);
                 state = lib.ExecutionState.Running;
 
-                game.step(1);
-                game.render_game();
+                step(1);
             }
 
             function step(input) {
                 state = game.step(input);
                 game.render_game();
-                document.getElementById('score').textContent = game.score();
+                scoreField.textContent = game.score();
             }
 
             startGame();
@@ -62,9 +71,17 @@ Score: <span id="score"></span><br />
                 }
             }
 
+            function autoPlayIterate() {
+                if (isAutoPlay) {
+                    step(0)
+                }
+            }
+
+            setInterval(autoPlayIterate, 10);
+
             window.addEventListener("keydown", keyEvent);
 
-            document.getElementById('restart').addEventListener('click', () => {
+            restartButton.addEventListener('click', () => {
                 startGame();
             })
 
