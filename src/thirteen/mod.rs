@@ -153,7 +153,9 @@ mod wasm {
 
             let (score, _, _) = read_output(&mut self.execution, &mut self.screen);
 
-            self.score = score;
+            if score > 0 {
+                self.score = score;
+            }
 
             Ok(state)
         }
@@ -161,11 +163,11 @@ mod wasm {
         pub fn render_game(&mut self) -> Result<(), JsValue> {
             render_grid(PIXEL_SIZE, &mut self.image_data, &self.screen, |tile| {
                 Some(match tile {
-                    Tile::Empty => [0x0f, 0x00, 0x00, 0xff],
-                    Tile::Wall => [0xff, 0x00, 0x00, 0xff],
-                    Tile::Block => [0x00, 0xff, 0x00, 0xff],
-                    Tile::Paddle => [0x00, 0x00, 0xff, 0xff],
-                    Tile::Ball => [0xff, 0xff, 0xff, 0xff],
+                    Tile::Empty => [0xf9, 0xf4, 0xef, 0xff],
+                    Tile::Wall => [0x71, 0x60, 0x40, 0xff],
+                    Tile::Block => [0x8c, 0x78, 0x51, 0xff],
+                    Tile::Paddle => [0x02, 0x08, 0x26, 0xff],
+                    Tile::Ball => [0xf2, 0x50, 0x42, 0xff],
                 })
             });
 

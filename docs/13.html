@@ -11,17 +11,16 @@
     --></style>
     <script src="js/utils.js"></script>
 </head>
-<body>
-<canvas id="screen"></canvas>
+<canvas id="screen"></canvas><br />
+Score: <span id="score"></span><br />
+<input type="button" value="Restart" id="restart"/>
 <script>
     LibReady('advent_of_code_2019')
         .then((lib) => {
             const canvas = document.getElementById('screen');
 
-
-
             let game = null;
-            let state = lib.ExecutionState.Running;
+            let state;
 
             function startGame() {
                 if (game != null) {
@@ -29,13 +28,21 @@
                 }
 
                 game = new lib.ThirteenGame(canvas);
+                state = lib.ExecutionState.Running;
+
                 game.step(1);
                 game.render_game();
             }
 
+            function step(input) {
+                state = game.step(input);
+                game.render_game();
+                document.getElementById('score').textContent = game.score();
+            }
+
             startGame();
 
-            window.addEventListener("keydown", event => {
+            function keyEvent(event) {
                 if (event.isComposing || event.keyCode === 229) {
                     return;
                 }
@@ -47,14 +54,19 @@
                     input = 1;
                 }
 
-                let state = game.step(input);
-                game.render_game();
-
-                if (state === lib.ExecutionState.Halted) {
+                if (state !== lib.ExecutionState.Halted) {
+                    step(input);
+                }
+                else {
                     startGame();
                 }
-                // do something
-            });
+            }
+
+            window.addEventListener("keydown", keyEvent);
+
+            document.getElementById('restart').addEventListener('click', () => {
+                startGame();
+            })
 
 
 
