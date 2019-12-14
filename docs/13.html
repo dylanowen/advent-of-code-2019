@@ -11,6 +11,7 @@
     --></style>
     <script src="js/utils.js"></script>
 </head>
+<body>
 <canvas id="screen"></canvas><br />
 Score: <span id="score"></span><br />
 <input type="button" value="Restart" id="restart"/>
@@ -55,7 +56,13 @@ Score: <span id="score"></span><br />
 
             startGame();
 
-            function keyEvent(event) {
+            setInterval(() => {
+                if (isAutoPlay) {
+                    step(0)
+                }
+            }, 10);
+
+            window.addEventListener("keydown", (event) => {
                 if (event.isComposing || event.keyCode === 229) {
                     return;
                 }
@@ -73,43 +80,13 @@ Score: <span id="score"></span><br />
                 else {
                     startGame();
                 }
-            }
-
-            function autoPlayIterate() {
-                if (isAutoPlay) {
-                    step(0)
-                }
-            }
-
-            setInterval(autoPlayIterate, 10);
-
-            window.addEventListener("keydown", keyEvent);
+            });
 
             restartButton.addEventListener('click', () => {
                 startGame();
             })
 
-
-
-            // canvas.width = game.width() * pixelSize;
-            // canvas.height = game.height() * pixelSize;
-            //
-            // const ctx = canvas.getContext('2d');
-            //
-            // // pixels are stored in RGBA
-            // imgByteSize = canvas.width * canvas.height * 4;
-            // imgPointer = lib.alloc_vec(imgByteSize);
-            // function step() {
-            //     game.step(0);
-            //     game.render_game();
-            // }
-            //
-            // step();
-
-            //setInterval(step, 1000);
-
         })
-        //.then(archizoom => archizoom[0].free())
         .catch((e) => console.error(e));
 
 
