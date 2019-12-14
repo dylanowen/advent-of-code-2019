@@ -89,7 +89,7 @@ mod wasm {
     pub struct ThirteenGame {
         execution: Execution,
         screen: Grid<Tile>,
-        auto_play: VecDeque<IntCode>,
+        my_winning_game: VecDeque<IntCode>,
         score: i64,
         image_data: Vec<u8>,
         canvas_ctx: CanvasRenderingContext2d,
@@ -101,7 +101,7 @@ mod wasm {
         pub fn new(
             canvas: &HtmlCanvasElement,
             custom_program: Option<String>,
-            auto_play: bool,
+            load_winning_game: bool,
         ) -> Result<ThirteenGame, JsValue> {
             let program = custom_program
                 .as_ref()
@@ -114,9 +114,12 @@ mod wasm {
             let mut execution = Execution::new(paid_program);
             execution.run().map_err(|e| format!("CPU Error: {:?}", e))?;
 
-            let screen = Grid::new_with_dimensions(0..=44, 0..=44);
+            let mut screen = Grid::new_with_dimensions(0..=44, 0..=44);
 
-            let auto_play_data = if auto_play {
+            // pre-load our screen output before calculating our canvas size
+            read_output(&mut execution, &mut screen);
+
+            let winning_game_data = if load_winning_game {
                 VecDeque::from(parse_program(include_str!(
                     "../thirteen/13_perfect_game.txt"
                 )))
@@ -134,18 +137,23 @@ mod wasm {
                 .expect("We need a canvas context")
                 .dyn_into::<CanvasRenderingContext2d>()?;
 
-            Ok(ThirteenGame {
+            let mut game = ThirteenGame {
                 execution,
                 screen,
-                auto_play: auto_play_data,
+                my_winning_game: winning_game_data,
                 score: 0,
                 image_data,
                 canvas_ctx,
-            })
+            };
+
+            // render once, so there is something to see
+            game.render()?;
+
+            Ok(game)
         }
 
         pub fn step(&mut self, user_input: isize) -> Result<ExecutionState, JsValue> {
-            let input = if let Some(auto_input) = self.auto_play.pop_front() {
+            let input = if let Some(auto_input) = self.my_winning_game.pop_front() {
                 auto_input
             } else {
                 user_input as i64
@@ -163,12 +171,12 @@ mod wasm {
                 self.score = score;
             }
 
-            self.render_game()?;
+            self.render()?;
 
             Ok(state)
         }
 
-        fn render_game(&mut self) -> Result<(), JsValue> {
+        fn render(&mut self) -> Result<(), JsValue> {
             self.screen.render(&mut self.image_data);
 
             let image_data = ImageData::new_with_u8_clamped_array_and_sh(

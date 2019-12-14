@@ -160,14 +160,14 @@ class ThirteenGame {
     /**
     * @param {any} canvas
     * @param {string | undefined} custom_program
-    * @param {boolean} auto_play
+    * @param {boolean} load_winning_game
     * @returns {ThirteenGame}
     */
-    constructor(canvas, custom_program, auto_play) {
+    constructor(canvas, custom_program, load_winning_game) {
         const ptr0 = isLikeNone(custom_program) ? 0 : passStringToWasm(custom_program);
         const len0 = WASM_VECTOR_LEN;
         try {
-            const ret = wasm.thirteengame_new(addBorrowedObject(canvas), ptr0, len0, auto_play);
+            const ret = wasm.thirteengame_new(addBorrowedObject(canvas), ptr0, len0, load_winning_game);
             return ThirteenGame.__wrap(ret);
         } finally {
             heap[stack_pointer++] = undefined;

@@ -265,22 +265,6 @@ impl<T: Default + CanvasPixel> Grid<T> {
                     + (canvas_start_y + y) * self.canvas_width())
                     * COLOR_BYTES;
 
-                //                console::log_1(
-                //                    &format!(
-                //                        "{},{}  {},{}  {},{}  {},{}  {}",
-                //                        self.canvas_width(),
-                //                        self.canvas_height(),
-                //                        canvas_start_x,
-                //                        canvas_start_y,
-                //                        x,
-                //                        y,
-                //                        (canvas_start_x + x),
-                //                        (canvas_start_y + y) * self.canvas_width(),
-                //                        byte_offset
-                //                    )
-                //                    .into(),
-                //                );
-
                 img_data[byte_offset] = r;
                 img_data[byte_offset + 1] = g;
                 img_data[byte_offset + 2] = b;

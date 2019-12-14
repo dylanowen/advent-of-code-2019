@@ -46,15 +46,14 @@ Score: <span id="score"></span><br />
                 }
 
                 try {
-                    game = new lib.ThirteenGame(canvas, customProgram, isAutoPlay);
+                    const loadMyWinningGame = customProgram == null && isAutoPlay;
+                    game = new lib.ThirteenGame(canvas, customProgram, loadMyWinningGame);
                 }
                 catch (e) {
                     alert("Bad program " + e);
                     window.location.reload();
                 }
                 state = lib.ExecutionState.Running;
-
-                step(1);
             }
 
             function step(input) {
@@ -96,7 +95,7 @@ Score: <span id="score"></span><br />
 
             document.getElementById('custom').addEventListener('click', () => {
                 customProgram = window.prompt("Custom Program");
-                autoPlayButton.className = 'hidden';
+                autoPlayButton.value = 'Auto Progress';
                 startGame();
             });
 

@@ -14,7 +14,10 @@ build: format clippy
 	cargo build $(RFLAGS)
 
 wasm:
-	wasm-pack build --target no-modules
+	wasm-pack build --target no-modules --dev
+
+wasm-publish:
+	wasm-pack build --target no-modules --release
 
 test: build
 	cargo test $(RFLAGS)
@@ -28,6 +31,8 @@ run: build
 	done
 
 default: run wasm
+
+publish: test wasm-publish
 
 clean:
 	cargo clean

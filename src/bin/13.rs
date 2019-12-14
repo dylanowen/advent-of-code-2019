@@ -49,12 +49,10 @@ impl Problem for Thirteen {
             parse_program(include_str!("../thirteen/13_perfect_game.txt")),
         );
 
-        //let mut last_ball = 0;
         while execution.run().expect("No errors") != ExecutionState::Halted {
             let (score, _, _) = read_output(&mut execution, &mut screen);
 
-            //log::trace!()
-            if log::log_enabled!(Level::Trace) {
+            if log::log_enabled!(Level::Info) {
                 screen.print_top_down();
                 println!("score: {}", score);
             }
