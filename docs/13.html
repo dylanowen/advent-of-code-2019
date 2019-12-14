@@ -16,6 +16,7 @@
 Score: <span id="score"></span><br />
 <input type="button" value="Restart" id="restart"/>
 <input type="button" value="My Winning Game" id="auto"/>
+<input type="button" value="Custom Program" id="custom"/>
 <pre>
     a: left
     d: right
@@ -28,6 +29,7 @@ Score: <span id="score"></span><br />
             const scoreField = document.getElementById('score');
             const restartButton = document.getElementById('restart');
             const autoPlayButton = document.getElementById('auto');
+            let customProgram = null;
             let isAutoPlay = false;
 
             autoPlayButton.addEventListener('click', () => {
@@ -43,7 +45,13 @@ Score: <span id="score"></span><br />
                     game.free();
                 }
 
-                game = new lib.ThirteenGame(canvas, isAutoPlay);
+                try {
+                    game = new lib.ThirteenGame(canvas, customProgram, isAutoPlay);
+                }
+                catch (e) {
+                    alert("Bad program " + e);
+                    window.location.reload();
+                }
                 state = lib.ExecutionState.Running;
 
                 step(1);
@@ -84,7 +92,13 @@ Score: <span id="score"></span><br />
 
             restartButton.addEventListener('click', () => {
                 startGame();
-            })
+            });
+
+            document.getElementById('custom').addEventListener('click', () => {
+                customProgram = window.prompt("Custom Program");
+                autoPlayButton.className = 'hidden';
+                startGame();
+            });
 
         })
         .catch((e) => console.error(e));

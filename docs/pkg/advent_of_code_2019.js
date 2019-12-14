@@ -22,6 +22,65 @@
         return stack_pointer;
     }
 
+    let WASM_VECTOR_LEN = 0;
+
+    let cachedTextEncoder = new TextEncoder('utf-8');
+
+    const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
+        ? function (arg, view) {
+        return cachedTextEncoder.encodeInto(arg, view);
+    }
+        : function (arg, view) {
+        const buf = cachedTextEncoder.encode(arg);
+        view.set(buf);
+        return {
+            read: arg.length,
+            written: buf.length
+        };
+    });
+
+    let cachegetUint8Memory = null;
+    function getUint8Memory() {
+        if (cachegetUint8Memory === null || cachegetUint8Memory.buffer !== wasm.memory.buffer) {
+            cachegetUint8Memory = new Uint8Array(wasm.memory.buffer);
+        }
+        return cachegetUint8Memory;
+    }
+
+    function passStringToWasm(arg) {
+
+        let len = arg.length;
+        let ptr = wasm.__wbindgen_malloc(len);
+
+        const mem = getUint8Memory();
+
+        let offset = 0;
+
+        for (; offset < len; offset++) {
+            const code = arg.charCodeAt(offset);
+            if (code > 0x7F) break;
+            mem[ptr + offset] = code;
+        }
+
+        if (offset !== len) {
+            if (offset !== 0) {
+                arg = arg.slice(offset);
+            }
+            ptr = wasm.__wbindgen_realloc(ptr, len, len = offset + arg.length * 3);
+            const view = getUint8Memory().subarray(ptr + offset, ptr + len);
+            const ret = encodeString(arg, view);
+
+            offset += ret.written;
+        }
+
+        WASM_VECTOR_LEN = offset;
+        return ptr;
+    }
+
+    function isLikeNone(x) {
+        return x === undefined || x === null;
+    }
+
 function getObject(idx) { return heap[idx]; }
 
 let heap_next = heap.length;
@@ -42,14 +101,6 @@ let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true 
 
 cachedTextDecoder.decode();
 
-let cachegetUint8Memory = null;
-function getUint8Memory() {
-    if (cachegetUint8Memory === null || cachegetUint8Memory.buffer !== wasm.memory.buffer) {
-        cachegetUint8Memory = new Uint8Array(wasm.memory.buffer);
-    }
-    return cachegetUint8Memory;
-}
-
 function getStringFromWasm(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
 }
@@ -63,53 +114,6 @@ function addHeapObject(obj) {
     return idx;
 }
 
-let WASM_VECTOR_LEN = 0;
-
-let cachedTextEncoder = new TextEncoder('utf-8');
-
-const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
-    ? function (arg, view) {
-    return cachedTextEncoder.encodeInto(arg, view);
-}
-    : function (arg, view) {
-    const buf = cachedTextEncoder.encode(arg);
-    view.set(buf);
-    return {
-        read: arg.length,
-        written: buf.length
-    };
-});
-
-function passStringToWasm(arg) {
-
-    let len = arg.length;
-    let ptr = wasm.__wbindgen_malloc(len);
-
-    const mem = getUint8Memory();
-
-    let offset = 0;
-
-    for (; offset < len; offset++) {
-        const code = arg.charCodeAt(offset);
-        if (code > 0x7F) break;
-        mem[ptr + offset] = code;
-    }
-
-    if (offset !== len) {
-        if (offset !== 0) {
-            arg = arg.slice(offset);
-        }
-        ptr = wasm.__wbindgen_realloc(ptr, len, len = offset + arg.length * 3);
-        const view = getUint8Memory().subarray(ptr + offset, ptr + len);
-        const ret = encodeString(arg, view);
-
-        offset += ret.written;
-    }
-
-    WASM_VECTOR_LEN = offset;
-    return ptr;
-}
-
 let cachegetInt32Memory = null;
 function getInt32Memory() {
     if (cachegetInt32Memory === null || cachegetInt32Memory.buffer !== wasm.memory.buffer) {
@@ -120,10 +124,6 @@ function getInt32Memory() {
 
 function handleError(e) {
     wasm.__wbindgen_exn_store(addHeapObject(e));
-}
-
-function isLikeNone(x) {
-    return x === undefined || x === null;
 }
 
 let cachegetUint8ClampedMemory = null;
@@ -159,12 +159,15 @@ class ThirteenGame {
     }
     /**
     * @param {any} canvas
+    * @param {string | undefined} custom_program
     * @param {boolean} auto_play
     * @returns {ThirteenGame}
     */
-    constructor(canvas, auto_play) {
+    constructor(canvas, custom_program, auto_play) {
+        const ptr0 = isLikeNone(custom_program) ? 0 : passStringToWasm(custom_program);
+        const len0 = WASM_VECTOR_LEN;
         try {
-            const ret = wasm.thirteengame_new(addBorrowedObject(canvas), auto_play);
+            const ret = wasm.thirteengame_new(addBorrowedObject(canvas), ptr0, len0, auto_play);
             return ThirteenGame.__wrap(ret);
         } finally {
             heap[stack_pointer++] = undefined;

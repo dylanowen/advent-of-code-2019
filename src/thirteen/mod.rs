@@ -98,8 +98,16 @@ mod wasm {
     #[wasm_bindgen]
     impl ThirteenGame {
         #[wasm_bindgen(constructor)]
-        pub fn new(canvas: &HtmlCanvasElement, auto_play: bool) -> Result<ThirteenGame, JsValue> {
-            let mut paid_program = parse_program(include_str!("../thirteen/13_input.txt")).clone();
+        pub fn new(
+            canvas: &HtmlCanvasElement,
+            custom_program: Option<String>,
+            auto_play: bool,
+        ) -> Result<ThirteenGame, JsValue> {
+            let program = custom_program
+                .as_ref()
+                .map(|x| &**x)
+                .unwrap_or(include_str!("../thirteen/13_input.txt"));
+            let mut paid_program = parse_program(program).clone();
             // pay 2 "quarters" for our game
             paid_program[0] = 2;
 
