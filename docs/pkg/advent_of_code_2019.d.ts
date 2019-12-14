@@ -25,9 +25,6 @@ export class ThirteenGame {
 */
   step(user_input: number): number;
 /**
-*/
-  render_game(): void;
-/**
 * @returns {number} 
 */
   score(): number;

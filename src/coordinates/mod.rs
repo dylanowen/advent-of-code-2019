@@ -5,7 +5,6 @@ use std::ops::RangeInclusive;
 use std::path::Path;
 use std::{fmt, mem};
 
-pub mod canvas;
 pub mod two_d;
 
 #[derive(Clone, Hash)]
@@ -61,11 +60,11 @@ impl<T> Grid<T> {
         self.grid.len()
     }
 
-    pub fn raw_x(&self, x: isize) -> isize {
+    fn raw_x(&self, x: isize) -> isize {
         x - self.x_min()
     }
 
-    pub fn raw_y(&self, y: isize) -> isize {
+    fn raw_y(&self, y: isize) -> isize {
         y - self.y_min()
     }
 }
@@ -223,6 +222,79 @@ impl<'a, T: Default> Iterator for GridEnumerator<'a, T> {
         } else {
             None
         }
+    }
+}
+
+pub trait CanvasPixel {
+    fn render(&self) -> &[u32];
+    fn width() -> usize;
+    fn height() -> usize;
+}
+
+static COLOR_BYTES: usize = 4;
+
+impl<T: Default + CanvasPixel> Grid<T> {
+    pub fn render(&self, img_data: &mut [u8]) {
+        for (point, pixel) in self.enumerate() {
+            self.render_pixel(pixel, point, img_data);
+        }
+    }
+
+    pub fn build_img_data(&self) -> Vec<u8> {
+        vec![0; (self.canvas_width() * self.canvas_height() * COLOR_BYTES) as usize]
+    }
+
+    fn render_pixel<P>(&self, pixel: &T, grid_start: P, img_data: &mut [u8])
+    where
+        P: PointLike + Sized,
+    {
+        let pixel_data = pixel.render();
+
+        let canvas_start_x = self.raw_x(grid_start.x()) as usize * T::width();
+        let canvas_start_y = self.raw_y(grid_start.y()) as usize * T::height();
+
+        for y in 0..T::height() {
+            for x in 0..T::width() {
+                let color = pixel_data[y * T::width() + x];
+                let r = (color >> 24 & 0xFF) as u8;
+                let g = (color >> 16 & 0xFF) as u8;
+                let b = (color >> 8 & 0xFF) as u8;
+                let a = (color & 0xFF) as u8;
+
+                let byte_offset = ((canvas_start_x + x)
+                    + (canvas_start_y + y) * self.canvas_width())
+                    * COLOR_BYTES;
+
+                //                console::log_1(
+                //                    &format!(
+                //                        "{},{}  {},{}  {},{}  {},{}  {}",
+                //                        self.canvas_width(),
+                //                        self.canvas_height(),
+                //                        canvas_start_x,
+                //                        canvas_start_y,
+                //                        x,
+                //                        y,
+                //                        (canvas_start_x + x),
+                //                        (canvas_start_y + y) * self.canvas_width(),
+                //                        byte_offset
+                //                    )
+                //                    .into(),
+                //                );
+
+                img_data[byte_offset] = r;
+                img_data[byte_offset + 1] = g;
+                img_data[byte_offset + 2] = b;
+                img_data[byte_offset + 3] = a;
+            }
+        }
+    }
+
+    pub fn canvas_width(&self) -> usize {
+        self.width() * T::width()
+    }
+
+    pub fn canvas_height(&self) -> usize {
+        self.height() * T::width()
     }
 }
 

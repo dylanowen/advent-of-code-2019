@@ -27,7 +27,7 @@ run: build
 		((i = i + 1)) ; \
 	done
 
-default: run
+default: run wasm
 
 clean:
 	cargo clean

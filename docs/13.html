@@ -15,6 +15,11 @@
 Score: <span id="score"></span><br />
 <input type="button" value="Restart" id="restart"/>
 <input type="button" value="My Winning Game" id="auto"/>
+<pre>
+    a: left
+    d: right
+    any_key: stay still
+</pre>
 <script>
     LibReady('advent_of_code_2019')
         .then((lib) => {
@@ -45,7 +50,6 @@ Score: <span id="score"></span><br />
 
             function step(input) {
                 state = game.step(input);
-                game.render_game();
                 scoreField.textContent = game.score();
             }
 

@@ -77,16 +77,13 @@ pub fn read_output(
 
 mod wasm {
     use super::*;
-    use crate::coordinates::canvas::render_grid;
+    use crate::coordinates::CanvasPixel;
     use crate::cpu::{parse_program, ExecutionState};
     use wasm_bindgen::prelude::*;
     use wasm_bindgen::Clamped;
     use wasm_bindgen::__rt::std::collections::VecDeque;
     use wasm_bindgen::{JsCast, JsValue};
-    use web_sys::console;
     use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
-
-    static PIXEL_SIZE: usize = 10;
 
     #[wasm_bindgen]
     pub struct ThirteenGame {
@@ -94,7 +91,6 @@ mod wasm {
         screen: Grid<Tile>,
         auto_play: VecDeque<IntCode>,
         score: i64,
-        image_dimensions: (u32, u32),
         image_data: Vec<u8>,
         canvas_ctx: CanvasRenderingContext2d,
     }
@@ -111,10 +107,6 @@ mod wasm {
             execution.run().map_err(|e| format!("CPU Error: {:?}", e))?;
 
             let screen = Grid::new_with_dimensions(0..=44, 0..=44);
-            let image_dimensions = (
-                (screen.width() * PIXEL_SIZE) as u32,
-                (screen.height() * PIXEL_SIZE) as u32,
-            );
 
             let auto_play_data = if auto_play {
                 VecDeque::from(parse_program(include_str!(
@@ -124,32 +116,21 @@ mod wasm {
                 VecDeque::new()
             };
 
-            console::log_1(
-                &format!(
-                    "{},{}     {}",
-                    image_dimensions.0,
-                    image_dimensions.1,
-                    (image_dimensions.0 * image_dimensions.1 * 4)
-                )
-                .into(),
-            );
+            let image_data = screen.build_img_data();
 
-            let image_data = vec![0; (image_dimensions.0 * image_dimensions.1 * 4) as usize];
-
-            canvas.set_width(image_dimensions.0);
-            canvas.set_height(image_dimensions.1);
+            canvas.set_width(screen.canvas_width() as u32);
+            canvas.set_height(screen.canvas_height() as u32);
 
             let canvas_ctx = canvas
                 .get_context("2d")?
                 .expect("We need a canvas context")
-                .dyn_into()?;
+                .dyn_into::<CanvasRenderingContext2d>()?;
 
             Ok(ThirteenGame {
                 execution,
                 screen,
                 auto_play: auto_play_data,
                 score: 0,
-                image_dimensions,
                 image_data,
                 canvas_ctx,
             })
@@ -174,24 +155,18 @@ mod wasm {
                 self.score = score;
             }
 
+            self.render_game()?;
+
             Ok(state)
         }
 
-        pub fn render_game(&mut self) -> Result<(), JsValue> {
-            render_grid(PIXEL_SIZE, &mut self.image_data, &self.screen, |tile| {
-                Some(match tile {
-                    Tile::Empty => [0xf9, 0xf4, 0xef, 0xff],
-                    Tile::Wall => [0x71, 0x60, 0x40, 0xff],
-                    Tile::Block => [0x8c, 0x78, 0x51, 0xff],
-                    Tile::Paddle => [0x02, 0x08, 0x26, 0xff],
-                    Tile::Ball => [0xf2, 0x50, 0x42, 0xff],
-                })
-            });
+        fn render_game(&mut self) -> Result<(), JsValue> {
+            self.screen.render(&mut self.image_data);
 
             let image_data = ImageData::new_with_u8_clamped_array_and_sh(
                 Clamped(&mut self.image_data),
-                self.image_dimensions.0,
-                self.image_dimensions.1,
+                self.screen.canvas_width() as u32,
+                self.screen.canvas_height() as u32,
             )?;
 
             self.canvas_ctx.put_image_data(&image_data, 0.0, 0.0)
@@ -199,6 +174,76 @@ mod wasm {
 
         pub fn score(&self) -> isize {
             self.score as isize
+        }
+    }
+
+    const PIXEL_WIDTH: usize = 10;
+    const PIXEL_HEIGHT: usize = 10;
+
+    #[allow(clippy::unreadable_literal)]
+    static EMPTY_TILE: [u32; PIXEL_WIDTH * PIXEL_HEIGHT] = [0xf9f4efff; PIXEL_WIDTH * PIXEL_HEIGHT];
+    #[allow(clippy::unreadable_literal)]
+    static WALL_TILE: [u32; PIXEL_WIDTH * PIXEL_HEIGHT] = [0x716040ff; PIXEL_WIDTH * PIXEL_HEIGHT];
+    #[rustfmt::skip]
+    #[allow(clippy::unreadable_literal)]
+    static BLOCK_TILE: [u32; PIXEL_WIDTH * PIXEL_HEIGHT] = [
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+        0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff,
+        0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff,
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0xf9f4efff, 0xf9f4efff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+        0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff, 0x8c7851ff,
+    ];
+    #[rustfmt::skip]
+    #[allow(clippy::unreadable_literal)]
+    static PADDLE_TILE: [u32; PIXEL_WIDTH * PIXEL_HEIGHT] = [
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff,
+        0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff,
+        0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff,
+        0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff, 0x020826ff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+    ];
+    #[rustfmt::skip]
+    #[allow(clippy::unreadable_literal)]
+    static BALL_TILE: [u32; PIXEL_WIDTH * PIXEL_HEIGHT] = [
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff,
+        0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff,
+        0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff,
+        0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf25042ff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+        0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff, 0xf9f4efff,
+    ];
+
+    impl CanvasPixel for Tile {
+        fn render(&self) -> &[u32] {
+            match *self {
+                Tile::Empty => &EMPTY_TILE,
+                Tile::Wall => &WALL_TILE,
+                Tile::Block => &BLOCK_TILE,
+                Tile::Paddle => &PADDLE_TILE,
+                Tile::Ball => &BALL_TILE,
+            }
+        }
+
+        fn width() -> usize {
+            PIXEL_WIDTH
+        }
+
+        fn height() -> usize {
+            PIXEL_HEIGHT
         }
     }
 }
