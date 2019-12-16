@@ -49,6 +49,8 @@
 
     function passStringToWasm(arg) {
 
+        if (typeof(arg) !== 'string') throw new Error('expected a string argument');
+
         let len = arg.length;
         let ptr = wasm.__wbindgen_malloc(len);
 
@@ -69,7 +71,7 @@
             ptr = wasm.__wbindgen_realloc(ptr, len, len = offset + arg.length * 3);
             const view = getUint8Memory().subarray(ptr + offset, ptr + len);
             const ret = encodeString(arg, view);
-
+            if (ret.read !== arg.length) throw new Error('failed to pass whole string');
             offset += ret.written;
         }
 
@@ -81,9 +83,38 @@
         return x === undefined || x === null;
     }
 
-function getObject(idx) { return heap[idx]; }
+    function _assertBoolean(n) {
+        if (typeof(n) !== 'boolean') {
+            throw new Error('expected a boolean argument');
+        }
+    }
 
-let heap_next = heap.length;
+    function _assertNum(n) {
+        if (typeof(n) !== 'number') throw new Error('expected a number argument');
+    }
+
+    let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+
+    cachedTextDecoder.decode();
+
+    function getStringFromWasm(ptr, len) {
+        return cachedTextDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
+    }
+
+    let heap_next = heap.length;
+
+    function addHeapObject(obj) {
+        if (heap_next === heap.length) heap.push(heap.length + 1);
+        const idx = heap_next;
+        heap_next = heap[idx];
+
+        if (typeof(heap_next) !== 'number') throw new Error('corrupt heap');
+
+        heap[idx] = obj;
+        return idx;
+    }
+
+function getObject(idx) { return heap[idx]; }
 
 function dropObject(idx) {
     if (idx < 36) return;
@@ -97,21 +128,16 @@ function takeObject(idx) {
     return ret;
 }
 
-let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
-
-cachedTextDecoder.decode();
-
-function getStringFromWasm(ptr, len) {
-    return cachedTextDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
-}
-
-function addHeapObject(obj) {
-    if (heap_next === heap.length) heap.push(heap.length + 1);
-    const idx = heap_next;
-    heap_next = heap[idx];
-
-    heap[idx] = obj;
-    return idx;
+function logError(e) {
+    let error = (function () {
+        try {
+            return e instanceof Error ? `${e.message}\n\nStack:\n${e.stack}` : e.toString();
+        } catch(_) {
+            return "<failed to stringify thrown value>";
+        }
+    }());
+    console.error("wasm-bindgen: imported JS function that was not marked as `catch` threw an error:", error);
+    throw e;
 }
 
 let cachegetInt32Memory = null;
@@ -166,6 +192,7 @@ class ThirteenGame {
     constructor(canvas, custom_program, load_winning_game) {
         const ptr0 = isLikeNone(custom_program) ? 0 : passStringToWasm(custom_program);
         const len0 = WASM_VECTOR_LEN;
+        _assertBoolean(load_winning_game);
         try {
             const ret = wasm.thirteengame_new(addBorrowedObject(canvas), ptr0, len0, load_winning_game);
             return ThirteenGame.__wrap(ret);
@@ -178,6 +205,9 @@ class ThirteenGame {
     * @returns {number}
     */
     step(user_input) {
+        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.ptr);
+        _assertNum(user_input);
         const ret = wasm.thirteengame_step(this.ptr, user_input);
         return ret;
     }
@@ -185,6 +215,8 @@ class ThirteenGame {
     * @returns {number}
     */
     score() {
+        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.ptr);
         const ret = wasm.thirteengame_score(this.ptr);
         return ret;
     }
@@ -196,60 +228,97 @@ function init(module) {
     let result;
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        takeObject(arg0);
-    };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         const ret = getStringFromWasm(arg0, arg1);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbg_new_59cb74e423758ede = function() {
-        const ret = new Error();
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_stack_558ba5917b466edd = function(arg0, arg1) {
-        const ret = getObject(arg1).stack;
-        const ret0 = passStringToWasm(ret);
-        const ret1 = WASM_VECTOR_LEN;
-        getInt32Memory()[arg0 / 4 + 0] = ret0;
-        getInt32Memory()[arg0 / 4 + 1] = ret1;
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
     };
     imports.wbg.__wbg_error_4bb6c2a97407129a = function(arg0, arg1) {
         const v0 = getStringFromWasm(arg0, arg1).slice();
         wasm.__wbindgen_free(arg0, arg1 * 1);
-        console.error(v0);
+        try {
+            console.error(v0);
+        } catch (e) {
+            logError(e)
+        }
+    };
+    imports.wbg.__wbg_new_59cb74e423758ede = function() {
+        try {
+            const ret = new Error();
+            return addHeapObject(ret);
+        } catch (e) {
+            logError(e)
+        }
+    };
+    imports.wbg.__wbg_stack_558ba5917b466edd = function(arg0, arg1) {
+        try {
+            const ret = getObject(arg1).stack;
+            const ret0 = passStringToWasm(ret);
+            const ret1 = WASM_VECTOR_LEN;
+            getInt32Memory()[arg0 / 4 + 0] = ret0;
+            getInt32Memory()[arg0 / 4 + 1] = ret1;
+        } catch (e) {
+            logError(e)
+        }
     };
     imports.wbg.__widl_instanceof_CanvasRenderingContext2D = function(arg0) {
-        const ret = getObject(arg0) instanceof CanvasRenderingContext2D;
-        return ret;
+        try {
+            const ret = getObject(arg0) instanceof CanvasRenderingContext2D;
+            _assertBoolean(ret);
+            return ret;
+        } catch (e) {
+            logError(e)
+        }
     };
     imports.wbg.__widl_f_put_image_data_CanvasRenderingContext2D = function(arg0, arg1, arg2, arg3) {
         try {
-            getObject(arg0).putImageData(getObject(arg1), arg2, arg3);
+            try {
+                getObject(arg0).putImageData(getObject(arg1), arg2, arg3);
+            } catch (e) {
+                handleError(e)
+            }
         } catch (e) {
-            handleError(e)
+            logError(e)
         }
     };
     imports.wbg.__widl_f_get_context_HTMLCanvasElement = function(arg0, arg1, arg2) {
         try {
-            const ret = getObject(arg0).getContext(getStringFromWasm(arg1, arg2));
-            return isLikeNone(ret) ? 0 : addHeapObject(ret);
+            try {
+                const ret = getObject(arg0).getContext(getStringFromWasm(arg1, arg2));
+                return isLikeNone(ret) ? 0 : addHeapObject(ret);
+            } catch (e) {
+                handleError(e)
+            }
         } catch (e) {
-            handleError(e)
+            logError(e)
         }
     };
     imports.wbg.__widl_f_set_width_HTMLCanvasElement = function(arg0, arg1) {
-        getObject(arg0).width = arg1 >>> 0;
+        try {
+            getObject(arg0).width = arg1 >>> 0;
+        } catch (e) {
+            logError(e)
+        }
     };
     imports.wbg.__widl_f_set_height_HTMLCanvasElement = function(arg0, arg1) {
-        getObject(arg0).height = arg1 >>> 0;
+        try {
+            getObject(arg0).height = arg1 >>> 0;
+        } catch (e) {
+            logError(e)
+        }
     };
     imports.wbg.__widl_f_new_with_u8_clamped_array_and_sh_ImageData = function(arg0, arg1, arg2, arg3) {
         try {
-            const ret = new ImageData(getClampedArrayU8FromWasm(arg0, arg1), arg2 >>> 0, arg3 >>> 0);
-            return addHeapObject(ret);
+            try {
+                const ret = new ImageData(getClampedArrayU8FromWasm(arg0, arg1), arg2 >>> 0, arg3 >>> 0);
+                return addHeapObject(ret);
+            } catch (e) {
+                handleError(e)
+            }
         } catch (e) {
-            handleError(e)
+            logError(e)
         }
     };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
