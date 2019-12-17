@@ -324,7 +324,13 @@ impl ParameterExtractor for [Mode; 3] {
 pub fn parse_program(raw_memory: &str) -> Memory {
     raw_memory
         .split(',')
-        .map(|s| s.trim().parse::<IntCode>().expect("parse error"))
+        .map(|s| {
+            let trimmed = s.trim();
+            trimmed.parse::<IntCode>().expect(&format!(
+                "Parse Error: {} couldn't be parsed as IntCode",
+                trimmed
+            ))
+        })
         .collect()
 }
 

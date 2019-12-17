@@ -4,9 +4,9 @@ use advent_of_code_2019::cpu::{parse_program, Execution, IntCode, Memory};
 use advent_of_code_2019::problem::{run, Problem, ProblemState};
 use env_logger::Env;
 use log::Level;
-use std::fmt::{Display, Write};
-use wasm_bindgen::__rt::core::fmt::{Error, Formatter};
-use wasm_bindgen::__rt::std::collections::LinkedList;
+use std::collections::LinkedList;
+use std::fmt;
+use std::fmt::{Display, Formatter, Write};
 
 struct Fifteen {}
 
@@ -73,7 +73,7 @@ impl Default for MapBlock {
 }
 
 impl Display for MapBlock {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             MapBlock::Vacuum(_) => f.write_char(' ')?,
             MapBlock::Oxygen => f.write_char('.')?,
