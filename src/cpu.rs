@@ -326,10 +326,9 @@ pub fn parse_program(raw_memory: &str) -> Memory {
         .split(',')
         .map(|s| {
             let trimmed = s.trim();
-            trimmed.parse::<IntCode>().expect(&format!(
-                "Parse Error: {} couldn't be parsed as IntCode",
-                trimmed
-            ))
+            trimmed.parse::<IntCode>().unwrap_or_else(|_| {
+                panic!("Parse Error: {} couldn't be parsed as IntCode", trimmed)
+            })
         })
         .collect()
 }

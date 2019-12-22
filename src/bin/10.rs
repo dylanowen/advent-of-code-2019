@@ -25,10 +25,9 @@ impl Problem for Ten {
             })
             .collect();
 
-        #[allow(clippy::range_minus_one)]
-        let mut grid: Grid<bool> = Grid::new_with_dimensions(
-            0..=raw_asteroids[0].len() as isize - 1,
-            0..=raw_asteroids.len() as isize - 1,
+        let mut grid: Grid<bool> = Grid::new_from_range(
+            0..raw_asteroids[0].len() as isize,
+            0..raw_asteroids.len() as isize,
         );
 
         for (y, row) in raw_asteroids.iter().enumerate() {

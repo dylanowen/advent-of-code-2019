@@ -107,14 +107,14 @@ mod wasm {
                 .as_ref()
                 .map(|x| &**x)
                 .unwrap_or(include_str!("../thirteen/13_input.txt"));
-            let mut paid_program = parse_program(program).clone();
+            let mut paid_program = parse_program(program);
             // pay 2 "quarters" for our game
             paid_program[0] = 2;
 
             let mut execution = Execution::new(paid_program);
             execution.run().map_err(|e| format!("CPU Error: {:?}", e))?;
 
-            let mut screen = Grid::new_with_dimensions(0..=44, 0..=44);
+            let mut screen = Grid::new_from_inclusive_range(0..=44, 0..=44);
 
             // pre-load our screen output before calculating our canvas size
             read_output(&mut execution, &mut screen);

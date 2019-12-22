@@ -3,6 +3,7 @@ use advent_of_code_2019::problem::{run, Problem, ProblemState, RunFor};
 use env_logger::Env;
 use num::Integer;
 use regex::Regex;
+use std::cmp::Ordering;
 
 struct Twelve {}
 
@@ -83,12 +84,10 @@ struct Axis {
 }
 
 fn velocity_delta(a: isize, b: isize) -> isize {
-    if a < b {
-        1
-    } else if a > b {
-        -1
-    } else {
-        0
+    match a.cmp(&b) {
+        Ordering::Less => 1,
+        Ordering::Greater => -1,
+        Ordering::Equal => 0,
     }
 }
 

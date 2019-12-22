@@ -1,7 +1,7 @@
 use crate::coordinates::two_d::{Point, PointLike};
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::ops::RangeInclusive;
+use std::ops::{Range, RangeInclusive};
 use std::path::Path;
 use std::{fmt, mem};
 
@@ -34,6 +34,11 @@ impl<T> Grid<T> {
         }
     }
 
+    #[inline]
+    pub fn get_point<P: PointLike>(&self, point: P) -> &T {
+        self.get(point.x(), point.y())
+    }
+
     pub fn x_min(&self) -> isize {
         self.x_offset
     }
@@ -56,6 +61,14 @@ impl<T> Grid<T> {
         self.width
     }
 
+    pub fn x_range(&self) -> Range<isize> {
+        self.x_min()..self.x_max()
+    }
+
+    pub fn y_range(&self) -> Range<isize> {
+        self.y_min()..self.y_max()
+    }
+
     pub fn height(&self) -> usize {
         self.grid.len()
     }
@@ -67,12 +80,12 @@ impl<T> Grid<T> {
     fn raw_y(&self, y: isize) -> isize {
         y - self.y_min()
     }
-}
 
-impl<T: Default> Grid<T> {
-    pub fn enumerate(&self) -> GridEnumerator<T> {
-        GridEnumerator {
-            grid: self,
+    pub fn indices(&self) -> GridIndices {
+        GridIndices {
+            x_min: self.x_min(),
+            x_max: self.x_max(),
+            y_max: self.y_max(),
             location: Point {
                 x: self.x_min(),
                 y: self.y_min(),
@@ -81,21 +94,39 @@ impl<T: Default> Grid<T> {
     }
 }
 
+impl<T: Default> Grid<T> {
+    pub fn enumerate(&self) -> GridEnumerator<T> {
+        GridEnumerator {
+            grid: self,
+            indices: self.indices(),
+        }
+    }
+}
+
 impl<T: Clone + Default> Grid<T> {
     pub fn new(center_x: isize, center_y: isize) -> Grid<T> {
-        Self::new_with_dimensions(
+        Self::new_from_inclusive_range(
             (center_x - 8)..=(center_x + 8),
             (center_y - 8)..=(center_y + 8),
         )
     }
 
-    pub fn new_with_dimensions(x: RangeInclusive<isize>, y: RangeInclusive<isize>) -> Grid<T> {
-        let width: usize = (x.end() - x.start()) as usize;
-        let height: usize = (x.end() - x.start()) as usize;
+    pub fn new_from_inclusive_range(x: RangeInclusive<isize>, y: RangeInclusive<isize>) -> Grid<T> {
+        #[allow(clippy::range_plus_one)]
+        Self::new_from_range(*x.start()..x.end() + 1, *y.start()..y.end() + 1)
+    }
+
+    pub fn new_from_grid_size<O>(other: &Grid<O>) -> Grid<T> {
+        Self::new_from_range(other.x_range(), other.y_range())
+    }
+
+    pub fn new_from_range(x: Range<isize>, y: Range<isize>) -> Grid<T> {
+        let width: usize = (x.end - x.start) as usize;
+        let height: usize = (x.end - x.start) as usize;
 
         Grid {
-            x_offset: *x.start(),
-            y_offset: *y.start(),
+            x_offset: x.start,
+            y_offset: y.start,
             width,
             grid: vec![vec![Default::default(); width]; height],
             default: Default::default(),
@@ -147,6 +178,11 @@ impl<T: Clone + Default> Grid<T> {
         mem::replace(&mut self.grid[y_index][x_index], value)
     }
 
+    #[inline]
+    pub fn set_point<P: PointLike>(&mut self, point: P, value: T) -> T {
+        self.set(point.x(), point.y(), value)
+    }
+
     pub fn write_image<F>(&self, path: &str, converter: F)
     where
         F: Fn(&T) -> [u8; 4],
@@ -196,25 +232,24 @@ impl<T: fmt::Display + Default> Grid<T> {
     }
 }
 
-pub struct GridEnumerator<'a, T: Default> {
-    grid: &'a Grid<T>,
+pub struct GridIndices {
+    x_min: isize,
+    x_max: isize,
+    y_max: isize,
     location: Point,
 }
 
-impl<'a, T: Default> Iterator for GridEnumerator<'a, T> {
-    type Item = (Point, &'a T);
+impl Iterator for GridIndices {
+    type Item = Point;
 
     fn next(&mut self) -> Option<Self::Item> {
         // check if we've iterated past the grid
-        if self.location.y() < self.grid.y_max() {
-            let result = Some((
-                (self.location),
-                self.grid.get(self.location.x, self.location.y),
-            ));
+        if self.location.y() < self.y_max {
+            let result = Some(self.location);
 
             *self.location.x_mut() += 1;
-            if self.location.x() >= self.grid.x_max() {
-                *self.location.x_mut() = self.grid.x_min();
+            if self.location.x() >= self.x_max {
+                *self.location.x_mut() = self.x_min;
                 *self.location.y_mut() += 1;
             }
 
@@ -222,6 +257,21 @@ impl<'a, T: Default> Iterator for GridEnumerator<'a, T> {
         } else {
             None
         }
+    }
+}
+
+pub struct GridEnumerator<'a, T: Default> {
+    grid: &'a Grid<T>,
+    indices: GridIndices,
+}
+
+impl<'a, T: Default> Iterator for GridEnumerator<'a, T> {
+    type Item = (Point, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.indices
+            .next()
+            .map(|point| (point, self.grid.get(point.x(), point.y())))
     }
 }
 

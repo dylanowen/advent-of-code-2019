@@ -38,7 +38,7 @@ impl Problem for Thirteen {
     }
 
     fn part_2(program: &Self::Input, _state: &ProblemState<Self::Extra>) -> Option<String> {
-        let mut screen: Grid<Tile> = Grid::new_with_dimensions(0..=44, 0..=45);
+        let mut screen: Grid<Tile> = Grid::new_from_inclusive_range(0..=44, 0..=45);
 
         let mut paid_program = program.clone();
         // pay 2 "quarters" for our game

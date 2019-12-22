@@ -75,7 +75,7 @@ impl Problem for Three {
 
     fn part_1(wires: &Vec<Vec<Move>>, state: &ProblemState<Self::Extra>) -> Option<String> {
         let (width, height) = calculate_max_dimensions(wires);
-        let mut grid = Grid::new_with_dimensions(width, height);
+        let mut grid = Grid::new_from_inclusive_range(width, height);
         grid.set(0, 0, Wire::Center);
 
         let mut point = Point { x: 0, y: 0 };
@@ -131,7 +131,7 @@ impl Problem for Three {
 
     fn part_2(wires: &Vec<Vec<Move>>, _state: &ProblemState<Self::Extra>) -> Option<String> {
         let (width, height) = calculate_max_dimensions(wires);
-        let mut grid = Grid::new_with_dimensions(width, height);
+        let mut grid = Grid::new_from_inclusive_range(width, height);
         grid.set(0, 0, (Wire::Center, 0));
 
         let mut point = Point { x: 0, y: 0 };

@@ -1,3 +1,13 @@
+use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
+
+pub static NEIGHBOR_DELTAS: [Point; 4] = [
+    Point { x: 0, y: 1 },
+    Point { x: 1, y: 0 },
+    Point { x: 0, y: -1 },
+    Point { x: -1, y: 0 },
+];
+
 pub trait PointLike {
     fn new(x: isize, y: isize) -> Self
     where
@@ -7,6 +17,18 @@ pub trait PointLike {
     fn x_mut(&mut self) -> &mut isize;
     fn y(&self) -> isize;
     fn y_mut(&mut self) -> &mut isize;
+
+    fn neighbors(&self) -> [Self; 4]
+    where
+        Self: Sized + Copy,
+    {
+        let mut result = [*self; 4];
+        for (i, r) in result.iter_mut().enumerate() {
+            r.inc(&NEIGHBOR_DELTAS[i])
+        }
+
+        result
+    }
 
     #[inline]
     fn inc(&mut self, other: &dyn PointLike) {
@@ -48,7 +70,13 @@ impl PartialEq for dyn PointLike {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+impl Display for dyn PointLike {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "({},{})", self.x(), self.y())
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Point {
     pub x: isize,
     pub y: isize,
@@ -79,6 +107,18 @@ impl PointLike for Point {
     #[inline]
     fn y_mut(&mut self) -> &mut isize {
         &mut self.y
+    }
+}
+
+impl Debug for Point {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        <dyn PointLike as Display>::fmt(self, f)
+    }
+}
+
+impl Display for Point {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        <dyn PointLike as Display>::fmt(self, f)
     }
 }
 
