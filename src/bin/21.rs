@@ -55,10 +55,10 @@ impl Problem for TwentyOne {
     }
 }
 
-fn run_springdroid(script: &str, program: &Memory) -> Option<String> {
+fn run_springdroid(script: &str, program: &[IntCode]) -> Option<String> {
     let mut spring_script = compile_spring_script(script);
 
-    let mut execution = Execution::new(program.clone());
+    let mut execution = Execution::new(program.to_owned());
     execution.input.append(&mut spring_script);
 
     execution.run().expect("The program should work");
