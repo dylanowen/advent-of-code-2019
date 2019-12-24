@@ -75,13 +75,11 @@ impl Default for MapBlock {
 impl Display for MapBlock {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            MapBlock::Vacuum(_) => f.write_char(' ')?,
-            MapBlock::Oxygen => f.write_char('.')?,
-            MapBlock::Wall => f.write_char('#')?,
-            MapBlock::Unknown => f.write_char('?')?,
+            MapBlock::Vacuum(_) => f.write_char(' '),
+            MapBlock::Oxygen => f.write_char('.'),
+            MapBlock::Wall => f.write_char('#'),
+            MapBlock::Unknown => f.write_char('?'),
         }
-
-        Ok(())
     }
 }
 

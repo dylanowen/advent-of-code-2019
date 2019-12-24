@@ -7,7 +7,7 @@ use std::{fmt, mem};
 
 pub mod two_d;
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Grid<T> {
     x_offset: isize,
     y_offset: isize,
