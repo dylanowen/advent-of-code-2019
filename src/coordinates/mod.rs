@@ -122,7 +122,7 @@ impl<T: Clone + Default> Grid<T> {
 
     pub fn new_from_range(x: Range<isize>, y: Range<isize>) -> Grid<T> {
         let width: usize = (x.end - x.start) as usize;
-        let height: usize = (x.end - x.start) as usize;
+        let height: usize = (y.end - y.start) as usize;
 
         Grid {
             x_offset: x.start,

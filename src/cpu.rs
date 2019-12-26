@@ -130,13 +130,10 @@ impl Execution {
     }
 
     pub fn run(&mut self) -> Result<ExecutionState> {
-        log::trace!("{:?}", self);
         let mut state = self.step()?;
         while state == ExecutionState::Running {
             state = self.step()?;
-            log::trace!("{:?}", self);
         }
-        log::trace!("{:?}", self);
 
         Ok(state)
     }

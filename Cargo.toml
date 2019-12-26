@@ -18,10 +18,12 @@ log = "0.4"
 env_logger = "0.7"
 
 regex = "1"
+lazy_static = "1.4.0"
 num = "0.2"
 rand = "0.6.1"
 png = "0.15.1"
 permutohedron = "0.2"
+itertools = "0.8.2"
 
 # wasm dependencies
 futures = "0.1"
