@@ -30,11 +30,9 @@ impl Default for PanelColor {
 impl Display for PanelColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match *self {
-            PanelColor::Black => f.write_char('.')?,
-            PanelColor::White => f.write_char('#')?,
+            PanelColor::Black => f.write_char('.'),
+            PanelColor::White => f.write_char('#'),
         }
-
-        Ok(())
     }
 }
 
