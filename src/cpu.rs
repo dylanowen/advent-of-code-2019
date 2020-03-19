@@ -142,18 +142,14 @@ impl Execution {
         let instruction = Instruction::new(self.memory[self.ip])?;
         let mut ip_offset = instruction.size();
 
-        let Instruction {
-            op_code,
-            modes: parameters,
-        } = instruction;
-
+        let (op_code, parms) = self.prepare_instruction(instruction);
         let state = match op_code {
             OpCode::Add => {
-                *parameters.w3(self) = parameters.r1(self) + parameters.r2(self);
+                *parms.w(3) = parms.r(1) + parms.r(2);
                 ExecutionState::Running
             }
             OpCode::Mul => {
-                *parameters.w3(self) = parameters.r1(self) * parameters.r2(self);
+                *parms.w(3) = parms.r(1) * parms.r(2);
                 ExecutionState::Running
             }
             OpCode::Input => {
@@ -161,49 +157,40 @@ impl Execution {
 
                 match input {
                     Some(i) => {
-                        *parameters.w1(self) = i;
+                        *parms.w(1) = i;
                         ExecutionState::Running
                     }
                     None => ExecutionState::NeedsInput,
                 }
             }
             OpCode::Output => {
-                self.output.push_back(parameters.r1(self));
+                self.output.push_back(parms.r(1));
                 ExecutionState::Running
             }
             OpCode::JumpIfTrue => {
-                if parameters.r1(self) != 0 {
-                    self.ip = parameters.r2(self) as usize;
+                if parms.r(1) != 0 {
+                    self.ip = parms.r(2) as usize;
                     ip_offset = 0;
                 }
                 ExecutionState::Running
             }
             OpCode::JumpIfFalse => {
-                if parameters.r1(self) == 0 {
-                    self.ip = parameters.r2(self) as usize;
+                if parms.r(1) == 0 {
+                    self.ip = parms.r(2) as usize;
                     ip_offset = 0;
                 }
                 ExecutionState::Running
             }
             OpCode::LessThan => {
-                *parameters.w3(self) = if parameters.r1(self) < parameters.r2(self) {
-                    1
-                } else {
-                    0
-                };
+                *parms.w(3) = if parms.r(1) < parms.r(2) { 1 } else { 0 };
                 ExecutionState::Running
             }
             OpCode::Equals => {
-                *parameters.w3(self) = if parameters.r1(self) == parameters.r2(self) {
-                    1
-                } else {
-                    0
-                };
+                *parms.w(3) = if parms.r(1) == parms.r(2) { 1 } else { 0 };
                 ExecutionState::Running
             }
             OpCode::AdjustBase => {
-                self.relative_base =
-                    ((self.relative_base as IntCode) + parameters.r1(self)) as usize;
+                self.relative_base = ((self.relative_base as IntCode) + parms.r(1)) as usize;
 
                 ExecutionState::Running
             }
@@ -215,6 +202,18 @@ impl Execution {
         }
 
         Ok(state)
+    }
+
+    fn prepare_instruction(&mut self, instruction: Instruction) -> (OpCode, ParameterExtractor) {
+        let Instruction { op_code, modes } = instruction;
+
+        (
+            op_code,
+            ParameterExtractor {
+                execution: self,
+                modes,
+            },
+        )
     }
 
     pub fn expect_pop(&mut self) -> IntCode {
@@ -260,7 +259,38 @@ impl From<Memory> for Execution {
     }
 }
 
-trait ParameterExtractor {
+struct ParameterExtractor<'a> {
+    execution: &'a mut Execution,
+    modes: [Mode; 3],
+}
+
+impl<'a> ParameterExtractor<'a> {
+    fn r(&self, offset: isize) -> IntCode {
+        let value = self.execution[(self.execution.ip as isize + offset + 1) as usize];
+        match self.modes[offset as usize] {
+            Mode::Position => self.execution[value as usize],
+            Mode::Immediate => value,
+            Mode::Relative => {
+                let address = (self.execution.relative_base as IntCode) + value;
+                self.execution[address as usize]
+            }
+        }
+    }
+
+    fn w(self, offset: IntCode) -> &'a mut IntCode {
+        let value = self.execution[(self.execution.ip as IntCode + offset + 1) as usize];
+        match self.modes[offset as usize] {
+            Mode::Position => &mut self.execution[value as usize],
+            Mode::Immediate => panic!("We should never write in immediate mode"),
+            Mode::Relative => {
+                let address = (self.execution.relative_base as IntCode) + value;
+                &mut self.execution[address as usize]
+            }
+        }
+    }
+}
+
+trait ParameterExtractorld {
     fn r1(&self, execution: &Execution) -> IntCode {
         self.read(0, execution)
     }
@@ -290,7 +320,7 @@ trait ParameterExtractor {
     fn write<'a>(&self, offset: IntCode, execution: &'a mut Execution) -> &'a mut IntCode;
 }
 
-impl ParameterExtractor for [Mode; 3] {
+impl ParameterExtractorld for [Mode; 3] {
     fn read(&self, offset: IntCode, execution: &Execution) -> IntCode {
         let value = execution[(execution.ip as IntCode + offset + 1) as usize];
         match self[offset as usize] {
@@ -304,8 +334,6 @@ impl ParameterExtractor for [Mode; 3] {
     }
 
     fn write<'a>(&self, offset: IntCode, execution: &'a mut Execution) -> &'a mut IntCode {
-        assert_ne!(self[offset as usize], Mode::Immediate);
-
         let value = execution[(execution.ip as IntCode + offset + 1) as usize];
         match self[offset as usize] {
             Mode::Position => &mut execution[value as usize],
